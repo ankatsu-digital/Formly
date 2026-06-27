@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フォーム — Formly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--purple:#6C63FF;--coral:#FF6584;--dark:#1A1A2E;--bg:#F8F9FF;--bg2:#EEEEFF;--text:#2D2D4E;--muted:#7B7B9E;--white:#FFFFFF;--border:rgba(108,99,255,0.12);}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  .form-wrapper{max-width:640px;margin:0 auto;padding:40px 20px 80px;}
+  .form-header{background:var(--white);border-radius:20px;padding:36px;margin-bottom:0;
+    border:1.5px solid var(--border);border-bottom:none;border-radius:20px 20px 0 0;}
+  .form-color-strip{height:8px;border-radius:4px;background:var(--purple);margin-bottom:28px;}
+  .form-title{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--dark);margin-bottom:10px;line-height:1.2;}
+  .form-desc{font-size:0.95rem;color:var(--muted);line-height:1.7;}
+  .form-body{display:flex;flex-direction:column;gap:0;}
+
+  .question-block{
+    background:var(--white);border:1.5px solid var(--border);
+    border-top:none;padding:28px 36px;
+    transition:all 0.3s;
+  }
+  .question-block:last-of-type{border-radius:0 0 20px 20px;}
+  .question-block.focused{border-color:var(--purple);}
+  .question-label{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.5;}
+  .required-mark{color:var(--coral);margin-left:4px;}
+  .question-desc{font-size:0.82rem;color:var(--muted);margin-bottom:14px;line-height:1.6;}
+  .answer-input{
+    width:100%;padding:12px 16px;border:1.5px solid var(--bg2);border-radius:12px;
+    font-size:0.95rem;font-family:'Inter',sans-serif;background:var(--bg);
+    color:var(--text);outline:none;transition:border-color 0.2s;
+  }
+  .answer-input:focus{border-color:var(--purple);background:var(--white);}
+  .answer-textarea{
+    width:100%;padding:12px 16px;border:1.5px solid var(--bg2);border-radius:12px;
+    font-size:0.95rem;font-family:'Inter',sans-serif;background:var(--bg);
+    color:var(--text);outline:none;transition:border-color 0.2s;resize:vertical;min-height:100px;
+  }
+  .answer-textarea:focus{border-color:var(--purple);background:var(--white);}
+  .radio-options,.checkbox-options{display:flex;flex-direction:column;gap:8px;}
+  .option-label{
+    display:flex;align-items:center;gap:12px;padding:12px 16px;
+    border:1.5px solid var(--bg2);border-radius:12px;cursor:pointer;
+    font-size:0.92rem;transition:all 0.2s;background:var(--bg);
+  }
+  .option-label:hover{border-color:var(--purple-light,#8B85FF);background:rgba(108,99,255,0.03);}
+  .option-label input[type=radio],
+  .option-label input[type=checkbox]{accent-color:var(--purple);width:16px;height:16px;}
+  .option-label.checked{border-color:var(--purple);background:rgba(108,99,255,0.06);color:var(--purple);}
+
+  .answer-select{
+    width:100%;padding:12px 16px;border:1.5px solid var(--bg2);border-radius:12px;
+    font-size:0.95rem;font-family:'Inter',sans-serif;background:var(--bg);
+    color:var(--text);outline:none;appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237B7B9E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;
+    padding-right:40px;
+  }
+  .answer-select:focus{border-color:var(--purple);}
+  .stars-input{display:flex;gap:8px;}
+  .star-btn{font-size:1.8rem;cursor:pointer;filter:grayscale(1);transition:all 0.15s;border:none;background:none;}
+  .star-btn.active{filter:none;}
+  .star-btn:hover{transform:scale(1.15);}
+  .slider-wrapper{padding:8px 0;}
+  .slider-track{width:100%;appearance:none;height:6px;border-radius:3px;outline:none;cursor:pointer;}
+  .slider-labels{display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);margin-top:8px;}
+  .slider-value{text-align:center;font-weight:700;color:var(--purple);font-size:1.1rem;margin-top:4px;}
+  .file-drop{
+    border:2px dashed var(--bg2);border-radius:12px;padding:28px;
+    text-align:center;cursor:pointer;transition:all 0.2s;
+  }
+  .file-drop:hover{border-color:var(--purple);background:rgba(108,99,255,0.03);}
+  .file-drop input{display:none;}
+  .agree-label{
+    display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
+    border:1.5px solid var(--bg2);border-radius:12px;cursor:pointer;
+    font-size:0.9rem;line-height:1.6;background:var(--bg);transition:all 0.2s;
+  }
+  .agree-label.checked{border-color:var(--purple);background:rgba(108,99,255,0.06);}
+  .agree-label input{accent-color:var(--purple);width:16px;height:16px;margin-top:2px;flex-shrink:0;}
+
+  .error-msg{font-size:0.78rem;color:var(--coral);margin-top:6px;display:none;}
+  .question-block.error .error-msg{display:block;}
+  .question-block.error .answer-input,
+  .question-block.error .answer-textarea,
+  .question-block.error .answer-select{border-color:var(--coral);}
+
+  .progress-bar-wrap{
+    position:fixed;top:0;left:0;right:0;height:3px;background:var(--bg2);z-index:100;
+  }
+  .progress-bar-fill{height:100%;background:var(--purple);transition:width 0.4s ease;}
+
+  .submit-section{padding:28px 36px;background:var(--white);border:1.5px solid var(--border);border-top:none;border-radius:0 0 20px 20px;margin-top:0;}
+  .btn-submit{
+    background:linear-gradient(135deg,var(--purple),var(--purple-dark,#4A42CC));
+    color:#fff;border:none;padding:16px 48px;border-radius:100px;
+    font-size:1rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+    box-shadow:0 8px 32px rgba(108,99,255,0.30);transition:all 0.25s;
+  }
+  .btn-submit:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(108,99,255,0.40);}
+  .btn-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+  .formly-brand{text-align:center;margin-top:28px;font-size:0.78rem;color:var(--muted);}
+  .formly-brand a{color:var(--purple);text-decoration:none;font-weight:600;}
+
+  /* Password Gate */
+  .password-gate{
+    background:var(--white);border-radius:20px;padding:48px;
+    text-align:center;border:1.5px solid var(--border);
+  }
+  .password-gate h2{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;margin-bottom:12px;}
+  .password-gate p{color:var(--muted);margin-bottom:24px;}
+
+  /* Thank you screen */
+  .thankyou-screen{display:none;text-align:center;padding:80px 20px;}
+  .thankyou-icon{font-size:4rem;margin-bottom:24px;}
+  .thankyou-title{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--dark);margin-bottom:12px;}
+  .thankyou-sub{color:var(--muted);font-size:1rem;line-height:1.7;}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:200;}
+
+  @media(max-width:640px){
+    .question-block,.form-header,.submit-section{padding:20px;}
+    .form-wrapper{padding:20px 12px 60px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar-wrap">
+  <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+</div>
+
+<div class="form-wrapper" id="formWrapper">
+  <div id="loadingState" style="text-align:center;padding:80px 0;color:var(--muted);">読み込み中...</div>
+  <div id="formContent" style="display:none;"></div>
+  <div class="thankyou-screen" id="thankyouScreen">
+    <canvas class="confetti" id="confettiCanvas"></canvas>
+    <div class="thankyou-icon">🎉</div>
+    <div class="thankyou-title" id="thankTitle">送信完了！</div>
+    <div class="thankyou-sub" id="thankMsg">ご回答ありがとうございました。</div>
+    <a href="index.html" style="display:inline-block;margin-top:32px;color:var(--purple);font-weight:600;text-decoration:none;">← Formlyで作る</a>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, addDoc, collection, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDarChAwm9_4t4CRfPiM5dVI84MjQPe5ms",
+  authDomain: "senkyo-29a84.firebaseapp.com",
+  projectId: "senkyo-29a84",
+  storageBucket: "senkyo-29a84.firebasestorage.app",
+  messagingSenderId: "734912107336",
+  appId: "1:734912107336:web:b57350fc64038f7611997d"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const params = new URLSearchParams(location.search);
+const formId = params.get('id');
+const previewId = params.get('preview');
+let formData = null;
+let answers = {};
+
+async function init() {
+  if(previewId) {
+    const stored = localStorage.getItem('preview_form');
+    if(stored) {
+      formData = JSON.parse(stored);
+      renderForm();
+    }
+  } else if(formId) {
+    try {
+      const snap = await getDoc(doc(db,'forms',formId));
+      if(snap.exists()) {
+        formData = snap.data();
+        renderForm();
+      } else {
+        document.getElementById('loadingState').textContent = 'フォームが見つかりません';
+      }
+    } catch(e) {
+      document.getElementById('loadingState').textContent = 'エラーが発生しました: '+e.message;
+    }
+  } else {
+    document.getElementById('loadingState').textContent = 'フォームIDが指定されていません';
+  }
+}
+
+function renderForm() {
+  const theme = formData.themeColor || '#6C63FF';
+  document.documentElement.style.setProperty('--purple', theme);
+  document.querySelector('.progress-bar-fill').style.background = theme;
+  document.title = (formData.title || 'フォーム') + ' — Formly';
+
+  // Password check
+  if(formData.settings?.password) {
+    showPasswordGate(formData.settings.password);
+    return;
+  }
+
+  showFormContent();
+}
+
+function showPasswordGate(pw) {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('formContent').style.display = 'block';
+  document.getElementById('formContent').innerHTML = `
+    <div class="password-gate">
+      <div style="font-size:2.5rem;margin-bottom:16px;">🔒</div>
+      <h2>パスワード保護されています</h2>
+      <p>このフォームを閲覧するにはパスワードが必要です</p>
+      <input type="password" id="pwInput" class="answer-input" placeholder="パスワードを入力" style="margin-bottom:12px;text-align:center;">
+      <br>
+      <button class="btn-submit" onclick="
+        const val = document.getElementById('pwInput').value;
+        if(val === '${pw}') showFormContent();
+        else { document.getElementById('pwInput').style.borderColor='var(--coral)'; }
+      ">入場する</button>
+    </div>`;
+  window.showFormContent = showFormContent;
+}
+
+function showFormContent() {
+  document.getElementById('loadingState').style.display = 'none';
+  const content = document.getElementById('formContent');
+  content.style.display = 'block';
+  const qs = formData.questions || [];
+
+  let html = `
+    <div class="form-header">
+      <div class="form-color-strip" id="colorStrip"></div>
+      <div class="form-title">${esc(formData.title||'フォーム')}</div>
+      ${formData.description?`<div class="form-desc">${esc(formData.description)}</div>`:''}
+    </div>
+    <div class="form-body" id="formBody">
+  `;
+
+  qs.forEach((q,i) => {
+    html += renderQuestion(q, i);
+  });
+
+  html += `</div>
+    <div class="submit-section">
+      <button class="btn-submit" id="submitBtn" onclick="submitForm()">送信する →</button>
+      ${previewId?'<div style="margin-top:12px;font-size:0.78rem;color:var(--coral);">⚠️ プレビューモード：送信データは保存されません</div>':''}
+    </div>
+    <div class="formly-brand">Powered by <a href="index.html">Formly</a></div>
+  `;
+
+  content.innerHTML = html;
+  document.getElementById('colorStrip').style.background = formData.themeColor||'#6C63FF';
+  initAnswers(qs);
+  updateProgress(qs);
+}
+
+function renderQuestion(q, i) {
+  let fieldHtml = '';
+  switch(q.type) {
+    case 'short': fieldHtml = `<input class="answer-input" type="text" placeholder="${esc(q.placeholder||'回答を入力...')}" id="ans_${q.id}" oninput="setAnswer('${q.id}',this.value);updateProgress(null)" onfocus="focusBlock('qblock_${q.id}')" onblur="unfocusBlock('qblock_${q.id}')">`;break;
+    case 'long': fieldHtml = `<textarea class="answer-textarea" placeholder="${esc(q.placeholder||'回答を入力...')}" id="ans_${q.id}" oninput="setAnswer('${q.id}',this.value);updateProgress(null)" onfocus="focusBlock('qblock_${q.id}')" onblur="unfocusBlock('qblock_${q.id}')"></textarea>`;break;
+    case 'number': fieldHtml = `<input class="answer-input" type="number" placeholder="0" id="ans_${q.id}" oninput="setAnswer('${q.id}',this.value)" onfocus="focusBlock('qblock_${q.id}')" onblur="unfocusBlock('qblock_${q.id}')">`;break;
+    case 'email': fieldHtml = `<input class="answer-input" type="email" placeholder="example@email.com" id="ans_${q.id}" oninput="setAnswer('${q.id}',this.value)" onfocus="focusBlock('qblock_${q.id}')" onblur="unfocusBlock('qblock_${q.id}')">`;break;
+    case 'tel': fieldHtml = `<input class="answer-input" type="tel" placeholder="090-0000-0000" id="ans_${q.id}" oninput="setAnswer('${q.id}',this.value)" onfocus="focusBlock('qblock_${q.id}')" onblur="unfocusBlock('qblock_${q.id}')">`;break;
+    case 'date': fieldHtml = `<input class="answer-input" type="date" id="ans_${q.id}" oninput="setAnswer('${q.id}',this.value)">`;break;
+    case 'time': fieldHtml = `<input class="answer-input" type="time" id="ans_${q.id}" oninput="setAnswer('${q.id}',this.value)">`;break;
+    case 'url': fieldHtml = `<input class="answer-input" type="url" placeholder="https://" id="ans_${q.id}" oninput="setAnswer('${q.id}',this.value)">`;break;
+    case 'select': fieldHtml = `<select class="answer-select" id="ans_${q.id}" onchange="setAnswer('${q.id}',this.value)">
+      <option value="">選択してください</option>
+      ${(q.options||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}
+    </select>`;break;
+    case 'radio': fieldHtml = `<div class="radio-options">${(q.options||[]).map(o=>`
+      <label class="option-label" id="opt_${q.id}_${esc(o)}">
+        <input type="radio" name="r_${q.id}" value="${esc(o)}" onchange="setAnswer('${q.id}',this.value);updateRadioStyle('${q.id}','${esc(o)}')">
+        ${esc(o)}
+      </label>`).join('')}</div>`;break;
+    case 'checkbox': fieldHtml = `<div class="checkbox-options">${(q.options||[]).map(o=>`
+      <label class="option-label" id="chk_${q.id}_${esc(o)}">
+        <input type="checkbox" name="c_${q.id}" value="${esc(o)}" onchange="setCheckboxAnswer('${q.id}');updateCheckStyle('${q.id}','${esc(o)}',this.checked)">
+        ${esc(o)}
+      </label>`).join('')}</div>`;break;
+    case 'rating': fieldHtml = `<div class="stars-input" id="stars_${q.id}">
+      ${[1,2,3,4,5].map(n=>`<button class="star-btn" data-val="${n}" onclick="setRating('${q.id}',${n})">★</button>`).join('')}
+    </div>`;break;
+    case 'slider': fieldHtml = `<div class="slider-wrapper">
+      <input type="range" class="slider-track" min="0" max="100" value="50" id="ans_${q.id}"
+        oninput="setAnswer('${q.id}',this.value);document.getElementById('sv_${q.id}').textContent=this.value"
+        style="accent-color:${formData.themeColor||'#6C63FF'}">
+      <div class="slider-value" id="sv_${q.id}">50</div>
+      <div class="slider-labels"><span>0</span><span>100</span></div>
+    </div>`;answers[q.id]='50';break;
+    case 'file': fieldHtml = `<div class="file-drop" onclick="document.getElementById('file_${q.id}').click()">
+      <input type="file" id="file_${q.id}" onchange="document.getElementById('fname_${q.id}').textContent=this.files[0]?.name||'';setAnswer('${q.id}',this.files[0]?.name||'')">
+      <div style="font-size:1.5rem;margin-bottom:8px;">📎</div>
+      <div style="font-size:0.88rem;color:var(--muted);">クリックしてファイルを選択</div>
+      <div id="fname_${q.id}" style="margin-top:8px;font-size:0.85rem;color:var(--purple);font-weight:600;"></div>
+    </div>`;break;
+    case 'agree': fieldHtml = `<label class="agree-label" id="agree_${q.id}">
+      <input type="checkbox" onchange="setAnswer('${q.id}',this.checked);document.getElementById('agree_${q.id}').classList.toggle('checked',this.checked)">
+      ${esc(q.label)}
+    </label>`;break;
+    default: fieldHtml = `<input class="answer-input" placeholder="回答を入力..." id="ans_${q.id}" oninput="setAnswer('${q.id}',this.value)">`;
+  }
+
+  return `<div class="question-block" id="qblock_${q.id}">
+    <div class="question-label">${esc(q.label)}${q.required?'<span class="required-mark">*</span>':''}</div>
+    ${q.description?`<div class="question-desc">${esc(q.description)}</div>`:''}
+    ${q.type==='agree'?'':fieldHtml}
+    ${q.type==='agree'?fieldHtml:''}
+    <div class="error-msg">この質問への回答は必須です</div>
+  </div>`;
+}
+
+function initAnswers(qs) {
+  qs.forEach(q => { if(!answers[q.id]) answers[q.id] = q.type==='checkbox'?[]:q.type==='slider'?'50':''; });
+}
+
+window.setAnswer = (id,val) => { answers[id]=val; updateProgress(null); };
+window.setCheckboxAnswer = (id) => {
+  const checked = [...document.querySelectorAll(`input[name="c_${id}"]:checked`)].map(i=>i.value);
+  answers[id] = checked;
+  updateProgress(null);
+};
+window.setRating = (id, val) => {
+  answers[id]=val;
+  document.querySelectorAll(`#stars_${id} .star-btn`).forEach(b=>{
+    b.classList.toggle('active', +b.dataset.val<=val);
+    if(+b.dataset.val<=val) b.style.color='#FEC02F'; else b.style.filter='grayscale(1)';
+  });
+  updateProgress(null);
+};
+window.updateRadioStyle = (id,val) => {
+  document.querySelectorAll(`input[name="r_${id}"]`).forEach(i=>{
+    i.closest('.option-label').classList.toggle('checked',i.value===val);
+  });
+};
+window.updateCheckStyle = (id,val,checked) => {
+  const el = document.getElementById(`chk_${id}_${val}`);
+  if(el) el.classList.toggle('checked',checked);
+};
+window.focusBlock = (id) => document.getElementById(id)?.classList.add('focused');
+window.unfocusBlock = (id) => document.getElementById(id)?.classList.remove('focused');
+
+function updateProgress(qs) {
+  const allQs = formData?.questions || qs || [];
+  if(!allQs.length) return;
+  const answered = allQs.filter(q=>{
+    const a = answers[q.id];
+    if(Array.isArray(a)) return a.length>0;
+    return a!==null && a!==undefined && a!=='';
+  }).length;
+  const pct = Math.round((answered/allQs.length)*100);
+  document.getElementById('progressBar').style.width = pct+'%';
+}
+window.updateProgress = updateProgress;
+
+window.submitForm = async function() {
+  const qs = formData?.questions||[];
+  let valid = true;
+  qs.forEach(q => {
+    const block = document.getElementById(`qblock_${q.id}`);
+    if(!block) return;
+    block.classList.remove('error');
+    if(q.required) {
+      const a = answers[q.id];
+      const empty = Array.isArray(a)?a.length===0:(!a||a==='');
+      if(empty) { block.classList.add('error'); valid=false; }
+    }
+  });
+  if(!valid) { document.querySelector('.question-block.error')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  if(previewId) { showThankYou(); return; }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled=true; btn.textContent='送信中...';
+  try {
+    await addDoc(collection(db,'responses'), {
+      formId, answers, submittedAt: new Date().toISOString()
+    });
+    await updateDoc(doc(db,'forms',formId), {responseCount: increment(1)});
+    showThankYou();
+  } catch(e) { btn.disabled=false; btn.textContent='送信する →'; alert('エラー: '+e.message); }
+};
+
+function showThankYou() {
+  document.getElementById('formWrapper').querySelector('.form-wrapper>*:not(#thankyouScreen)');
+  document.getElementById('formContent').style.display='none';
+  document.getElementById('loadingState').style.display='none';
+  const s = document.getElementById('thankyouScreen');
+  s.style.display='block';
+  document.getElementById('progressBar').style.width='100%';
+  launchConfetti();
+}
+
+function launchConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.width = innerWidth; canvas.height = innerHeight;
+  const ctx = canvas.getContext('2d');
+  const bits = Array.from({length:100},()=>({
+    x:Math.random()*innerWidth, y:Math.random()*innerHeight-innerHeight,
+    w:Math.random()*10+4, h:Math.random()*6+2,
+    color:['#6C63FF','#FF6584','#FEC02F','#06D6A0','#00B4D8'][Math.floor(Math.random()*5)],
+    rot:Math.random()*360, speed:Math.random()*3+1,
+  }));
+  let frame=0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    bits.forEach(b=>{
+      ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.rot*Math.PI/180);
+      ctx.fillStyle=b.color; ctx.fillRect(-b.w/2,-b.h/2,b.w,b.h);
+      ctx.restore();
+      b.y+=b.speed; b.rot+=2;
+      if(b.y>canvas.height) b.y=-20;
+    });
+    if(frame++<180) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+function esc(s=''){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+init();
+</script>
+</body>
+</html>
