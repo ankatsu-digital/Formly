@@ -11,107 +11,82 @@
 :root{--p:#6C63FF;--coral:#FF6584;--dark:#1A1A2E;--bg:#F0F1FA;--bg2:#EEEEFF;--text:#2D2D4E;--muted:#7B7B9E;--white:#fff;--border:rgba(108,99,255,0.13);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-
-.progress-wrap{position:fixed;top:0;left:0;right:0;height:3px;background:var(--bg2);z-index:100;}
-.progress-fill{height:100%;background:var(--p);transition:width .4s ease;}
-
-.fw{max-width:620px;margin:0 auto;padding:36px 16px 80px;}
-
-/* フォームヘッダー */
-.fhdr{background:var(--white);border-radius:16px 16px 0 0;padding:28px 32px 20px;border:1.5px solid var(--border);border-bottom:none;}
-.cbar{height:6px;border-radius:3px;margin-bottom:20px;}
-.ftitle{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:var(--dark);margin-bottom:8px;line-height:1.2;}
-.fdesc{font-size:.9rem;color:var(--muted);line-height:1.65;}
-
-/* 質問ブロック */
-.qblock{background:var(--white);border:1.5px solid var(--border);padding:22px 32px;transition:all .2s;}
-.qblock:last-of-type{border-radius:0 0 16px 16px;}
+.pbar-wrap{position:fixed;top:0;left:0;right:0;height:3px;background:var(--bg2);z-index:100;}
+.pbar-fill{height:100%;background:var(--p);transition:width .4s ease;}
+.fw{max-width:620px;margin:0 auto;padding:32px 14px 80px;}
+.fhdr{background:var(--white);border-radius:14px 14px 0 0;padding:26px 28px 18px;border:1.5px solid var(--border);border-bottom:none;}
+.cbar{height:5px;border-radius:3px;margin-bottom:18px;}
+.ftitle{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--dark);margin-bottom:7px;line-height:1.2;}
+.fdesc{font-size:.88rem;color:var(--muted);line-height:1.65;}
+.qblock{background:var(--white);border:1.5px solid var(--border);padding:20px 28px;transition:all .2s;}
+.qblock:last-of-type{border-radius:0 0 14px 14px;}
 .qblock.focused{border-color:var(--p);}
-.qblock.err .ans-input,.qblock.err .ans-textarea,.qblock.err .ans-select{border-color:var(--coral);}
-.qlabel{font-size:.96rem;font-weight:600;color:var(--text);margin-bottom:5px;line-height:1.4;}
+.qblock.err .ans-input,.qblock.err .ans-textarea,.qblock.err .ans-select{border-color:var(--coral)!important;}
+.qlabel{font-size:.94rem;font-weight:600;color:var(--text);margin-bottom:5px;line-height:1.4;}
 .qreq{color:var(--coral);margin-left:3px;}
-.qdesc{font-size:.8rem;color:var(--muted);margin-bottom:12px;line-height:1.6;}
-.errmsg{font-size:.75rem;color:var(--coral);margin-top:5px;display:none;}
+.qdesc{font-size:.78rem;color:var(--muted);margin-bottom:11px;line-height:1.6;}
+.errmsg{font-size:.73rem;color:var(--coral);margin-top:5px;display:none;}
 .qblock.err .errmsg{display:block;}
-
-/* inputs */
-.ans-input{width:100%;padding:11px 14px;border:1.5px solid var(--bg2);border-radius:10px;font-size:.9rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s;}
+.ans-input{width:100%;padding:10px 13px;border:1.5px solid var(--bg2);border-radius:9px;font-size:.88rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s;}
 .ans-input:focus{border-color:var(--p);background:var(--white);}
-.ans-textarea{width:100%;padding:11px 14px;border:1.5px solid var(--bg2);border-radius:10px;font-size:.9rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s;resize:vertical;min-height:90px;}
+.ans-textarea{width:100%;padding:10px 13px;border:1.5px solid var(--bg2);border-radius:9px;font-size:.88rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s;resize:vertical;min-height:85px;}
 .ans-textarea:focus{border-color:var(--p);background:var(--white);}
-.ans-select{width:100%;padding:11px 14px;border:1.5px solid var(--bg2);border-radius:10px;font-size:.9rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237B7B9E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
+.ans-select{width:100%;padding:10px 13px;border:1.5px solid var(--bg2);border-radius:9px;font-size:.88rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%237B7B9E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:34px;}
 .ans-select:focus{border-color:var(--p);}
-
-/* radio/checkbox options */
-.opts{display:flex;flex-direction:column;gap:7px;}
-.opt-lbl{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid var(--bg2);border-radius:10px;cursor:pointer;font-size:.88rem;transition:all .15s;background:var(--bg);}
-.opt-lbl:hover{border-color:rgba(108,99,255,.25);background:rgba(108,99,255,.02);}
+.opts{display:flex;flex-direction:column;gap:6px;}
+.opt-lbl{display:flex;align-items:center;gap:9px;padding:9px 13px;border:1.5px solid var(--bg2);border-radius:9px;cursor:pointer;font-size:.86rem;transition:all .15s;background:var(--bg);}
+.opt-lbl:hover{border-color:rgba(108,99,255,.25);}
 .opt-lbl.chk{border-color:var(--p);background:rgba(108,99,255,.06);color:var(--p);}
-.opt-lbl input{accent-color:var(--p);width:15px;height:15px;}
-
-/* star rating */
-.stars{display:flex;gap:6px;}
-.star{font-size:1.6rem;cursor:pointer;filter:grayscale(1);transition:all .12s;border:none;background:none;line-height:1;}
+.opt-lbl input{accent-color:var(--p);width:14px;height:14px;}
+.stars{display:flex;gap:5px;}
+.star{font-size:1.5rem;cursor:pointer;filter:grayscale(1);transition:all .12s;border:none;background:none;line-height:1;}
 .star.on{filter:none;}
 .star:hover{transform:scale(1.12);}
-
-/* slider */
-.slider-val{text-align:center;font-weight:700;color:var(--p);font-size:1rem;margin-top:5px;}
-.slider-lbl{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:4px;}
-
-/* file */
-.file-drop{border:2px dashed var(--bg2);border-radius:10px;padding:22px;text-align:center;cursor:pointer;transition:all .15s;}
-.file-drop:hover{border-color:var(--p);background:rgba(108,99,255,.02);}
-.file-name{margin-top:7px;font-size:.82rem;color:var(--p);font-weight:600;}
-
-/* agree */
-.agree-lbl{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1.5px solid var(--bg2);border-radius:10px;cursor:pointer;font-size:.88rem;line-height:1.55;background:var(--bg);transition:all .15s;}
+.slider-val{text-align:center;font-weight:700;color:var(--p);font-size:.96rem;margin-top:4px;}
+.slider-lbl{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:3px;}
+.file-drop{border:2px dashed var(--bg2);border-radius:9px;padding:20px;text-align:center;cursor:pointer;transition:all .15s;}
+.file-drop:hover{border-color:var(--p);}
+.file-name{margin-top:6px;font-size:.8rem;color:var(--p);font-weight:600;}
+.agree-lbl{display:flex;align-items:flex-start;gap:9px;padding:11px 13px;border:1.5px solid var(--bg2);border-radius:9px;cursor:pointer;font-size:.86rem;line-height:1.55;background:var(--bg);transition:all .15s;}
 .agree-lbl.chk{border-color:var(--p);background:rgba(108,99,255,.06);}
-.agree-lbl input{accent-color:var(--p);width:15px;height:15px;margin-top:2px;flex-shrink:0;}
-
-/* submit */
-.submit-wrap{padding:22px 32px;background:var(--white);border:1.5px solid var(--border);border-top:none;border-radius:0 0 16px 16px;}
-.btn-submit{background:linear-gradient(135deg,var(--p),#4A42CC);color:#fff;border:none;padding:14px 44px;border-radius:100px;font-size:.96rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 7px 28px rgba(108,99,255,.28);transition:all .22s;}
-.btn-submit:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(108,99,255,.38);}
+.agree-lbl input{accent-color:var(--p);width:14px;height:14px;margin-top:2px;flex-shrink:0;}
+.submit-wrap{padding:20px 28px;background:var(--white);border:1.5px solid var(--border);border-top:none;border-radius:0 0 14px 14px;}
+.btn-submit{background:linear-gradient(135deg,var(--p),#4A42CC);color:#fff;border:none;padding:13px 42px;border-radius:100px;font-size:.94rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 6px 24px rgba(108,99,255,.28);transition:all .2s;}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 9px 32px rgba(108,99,255,.36);}
 .btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none;}
-.preview-note{font-size:.75rem;color:var(--coral);margin-top:9px;}
-.brand{text-align:center;margin-top:22px;font-size:.75rem;color:var(--muted);}
+.pnote{font-size:.73rem;color:var(--coral);margin-top:8px;}
+.brand{text-align:center;margin-top:20px;font-size:.73rem;color:var(--muted);}
 .brand a{color:var(--p);text-decoration:none;font-weight:600;}
-
+/* 締切/公開前ゲート */
+.gate{background:var(--white);border-radius:14px;padding:44px 32px;text-align:center;border:1.5px solid var(--border);}
+.gate-icon{font-size:3rem;margin-bottom:14px;}
+.gate h2{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:8px;}
+.gate p{color:var(--muted);font-size:.88rem;line-height:1.65;}
 /* パスワードゲート */
-.pw-gate{background:var(--white);border-radius:16px;padding:44px;text-align:center;border:1.5px solid var(--border);}
-.pw-gate h2{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:8px;}
-.pw-gate p{color:var(--muted);margin-bottom:20px;font-size:.88rem;}
-
-/* サンクスページ */
-.thanks{display:none;text-align:center;padding:60px 16px;}
-.thanks-icon{font-size:3.5rem;margin-bottom:18px;}
-.thanks-title{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--dark);margin-bottom:8px;}
-.thanks-sub{color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:28px;}
-.confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:200;}
-
-/* パスワードゲートのinput */
-.pw-input{width:100%;max-width:280px;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.9rem;font-family:'Inter',sans-serif;outline:none;text-align:center;margin-bottom:11px;}
+.pw-input{width:100%;max-width:260px;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.9rem;font-family:'Inter',sans-serif;outline:none;text-align:center;margin-bottom:10px;}
 .pw-input:focus{border-color:var(--p);}
-
-@media(max-width:600px){.qblock,.fhdr,.submit-wrap{padding:16px 18px;}.fw{padding:20px 10px 60px;}}
+/* サンクス */
+.thanks{display:none;text-align:center;padding:60px 14px;}
+.thanks-icon{font-size:3.5rem;margin-bottom:16px;}
+.thanks-title{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;color:var(--dark);margin-bottom:7px;}
+.thanks-sub{color:var(--muted);font-size:.9rem;line-height:1.7;margin-bottom:24px;}
+.confetti-c{position:fixed;inset:0;pointer-events:none;z-index:200;}
+@media(max-width:600px){.qblock,.fhdr,.submit-wrap{padding:14px 16px;}.fw{padding:16px 8px 60px;}}
 </style>
 </head>
 <body>
-<div class="progress-wrap"><div class="progress-fill" id="pbar" style="width:0%"></div></div>
-
+<div class="pbar-wrap"><div class="pbar-fill" id="pbar" style="width:0%"></div></div>
 <div class="fw" id="fw">
   <div id="loading" style="text-align:center;padding:60px 0;color:var(--muted);">読み込み中...</div>
-  <div id="formContent" style="display:none;"></div>
-  <canvas class="confetti-canvas" id="confetti"></canvas>
+  <div id="fc" style="display:none;"></div>
+  <canvas class="confetti-c" id="confetti"></canvas>
   <div class="thanks" id="thanks">
     <div class="thanks-icon">🎉</div>
     <div class="thanks-title" id="thanksTitle">送信完了！</div>
     <div class="thanks-sub" id="thanksMsg">ご回答ありがとうございました。</div>
-    <a href="index.html" style="color:var(--p);font-weight:600;text-decoration:none;font-size:.85rem;">← Formlyで作る</a>
+    <a href="index.html" style="color:var(--p);font-weight:600;text-decoration:none;font-size:.83rem;">← Formlyで作る</a>
   </div>
 </div>
-
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyDarChAwm9_4t4CRfPiM5dVI84MjQPe5ms",
@@ -122,159 +97,150 @@ firebase.initializeApp({
   appId:"1:734912107336:web:b57350fc64038f7611997d"
 });
 var db=firebase.firestore();
-
 var params=new URLSearchParams(location.search);
-var formId=params.get('id');
-var previewId=params.get('preview');
-var formData=null;
-var answers={};
-// 条件分岐で次に表示する質問IDを追跡
-var currentQId=null; // 現在表示中の質問（1問ずつモードには今回は使わない）
+var formId=params.get('id'), previewId=params.get('preview');
+var formData=null, answers={};
+
+// q.t or q.type 両対応ヘルパー
+function qT(q){return q.t||q.type||'short';}
+function qL(q){return q.l||q.label||'';}
+function qD(q){return q.desc||q.description||'';}
+function qR(q){return !!(q.req||q.required);}
+function qO(q){return q.opts||q.options||[];}
+function qP(q){return q.ph||q.placeholder||'';}
 
 async function init(){
   if(previewId){
     var s=localStorage.getItem('preview_form');
-    if(s){formData=JSON.parse(s);renderForm();}
-    else{document.getElementById('loading').textContent='プレビューデータが見つかりません';}
+    if(s){formData=JSON.parse(s);processForm();}
+    else showGate('⚠️','プレビューデータなし','ビルダーからプレビューを開いてください');
   } else if(formId){
     try{
       var snap=await db.collection('forms').doc(formId).get();
-      if(snap.exists){formData=snap.data();renderForm();}
-      else{document.getElementById('loading').textContent='フォームが見つかりません';}
-    }catch(ex){document.getElementById('loading').textContent='エラー: '+ex.message;}
+      if(snap.exists){formData=snap.data();processForm();}
+      else showGate('🔍','フォームが見つかりません','URLを確認してください');
+    }catch(ex){showGate('❌','エラー',ex.message);}
   } else {
-    document.getElementById('loading').textContent='フォームIDが指定されていません';
+    showGate('❓','フォームIDなし','URLにフォームIDが必要です');
   }
 }
 
-// q.t or q.type など混在対応のヘルパー
-function qType(q){return q.t||q.type||'short';}
-function qLabel(q){return q.l||q.label||'';}
-function qDesc(q){return q.desc||q.description||'';}
-function qReq(q){return !!(q.req||q.required);}
-function qOpts(q){return q.opts||q.options||[];}
-function qPh(q){return q.ph||q.placeholder||'';}
+function showGate(icon,title,msg){
+  document.getElementById('loading').style.display='none';
+  var fc=document.getElementById('fc');fc.style.display='block';
+  fc.innerHTML='<div class="gate"><div class="gate-icon">'+icon+'</div><h2>'+e(title)+'</h2><p>'+e(msg)+'</p></div>';
+}
 
-function renderForm(){
+function processForm(){
   var t=formData.themeColor||'#6C63FF';
   document.documentElement.style.setProperty('--p',t);
   document.getElementById('pbar').style.background=t;
   document.title=(formData.title||'フォーム')+' — Formly';
+  var st=formData.settings||{};
+  var now=new Date();
 
-  if(formData.settings&&formData.settings.password){
-    showPwGate(formData.settings.password); return;
+  // ★公開日時チェック
+  if(st.publishAt){
+    var pub=new Date(st.publishAt);
+    if(now<pub){
+      showGate('⏳','まだ公開されていません','公開日時：'+pub.toLocaleString('ja-JP'));
+      return;
+    }
   }
-  showFormContent();
+  // ★締切チェック
+  if(st.deadline){
+    var dl=new Date(st.deadline);
+    if(now>dl){
+      showGate('🔒','受付終了','このフォームは締め切られています。\n締切：'+dl.toLocaleString('ja-JP'));
+      return;
+    }
+  }
+  // ★定員チェック
+  if(st.capacity && (formData.responseCount||0) >= parseInt(st.capacity)){
+    showGate('👥','定員に達しました','このフォームは定員締切となりました。');
+    return;
+  }
+  // パスワードチェック
+  if(st.password){showPwGate(st.password);return;}
+  renderForm();
 }
 
 function showPwGate(pw){
   document.getElementById('loading').style.display='none';
-  var fc=document.getElementById('formContent');
-  fc.style.display='block';
-  fc.innerHTML='<div class="pw-gate">'
-    +'<div style="font-size:2.2rem;margin-bottom:12px;">🔒</div>'
-    +'<h2>パスワードが必要です</h2>'
-    +'<p>このフォームは限定公開です</p>'
-    +'<input type="password" class="pw-input" id="pwInp" placeholder="パスワードを入力"><br>'
-    +'<button class="btn-submit" onclick="checkPw(\''+pw.replace(/'/g,"\\'")+'\')" style="padding:11px 32px;">入場する</button>'
+  var fc=document.getElementById('fc');fc.style.display='block';
+  fc.innerHTML='<div class="gate"><div class="gate-icon">🔒</div><h2>パスワードが必要です</h2><p>このフォームは限定公開です</p>'
+    +'<br><input type="password" class="pw-input" id="pwInp" placeholder="パスワードを入力"><br>'
+    +'<button class="btn-submit" style="padding:10px 28px;" onclick="checkPw()">入場する</button>'
+    +'<div id="pwErr" style="color:var(--coral);font-size:.78rem;margin-top:8px;"></div>'
   +'</div>';
-}
-function checkPw(pw){
-  var v=document.getElementById('pwInp').value;
-  if(v===pw){document.getElementById('formContent').innerHTML='';showFormContent();}
-  else{document.getElementById('pwInp').style.borderColor='var(--coral)';}
+  window.checkPw=function(){
+    var v=document.getElementById('pwInp').value;
+    if(v===pw){fc.innerHTML='';renderForm();}
+    else{document.getElementById('pwErr').textContent='パスワードが違います';}
+  };
 }
 
-function showFormContent(){
+function renderForm(){
   document.getElementById('loading').style.display='none';
   var qs=formData.questions||[];
-  // 初期化 answers
-  qs.forEach(function(q){
-    var id=q.id||'';
-    answers[id]= qType(q)==='checkbox'?[]:qType(q)==='slider'?'50':'';
-  });
-  var fc=document.getElementById('formContent');
-  fc.style.display='block';
+  qs.forEach(function(q){answers[q.id]=qT(q)==='checkbox'?[]:qT(q)==='slider'?'50':'';});
+  var fc=document.getElementById('fc');fc.style.display='block';
   var html='<div class="fhdr"><div class="cbar" style="background:var(--p)"></div>'
-    +'<div class="ftitle">'+esc(formData.title||'フォーム')+'</div>'
-    +(formData.description?'<div class="fdesc">'+esc(formData.description)+'</div>':'')
+    +'<div class="ftitle">'+e(formData.title||'フォーム')+'</div>'
+    +(formData.description?'<div class="fdesc">'+e(formData.description)+'</div>':'')
     +'</div>';
   qs.forEach(function(q){html+=renderQBlock(q);});
   html+='<div class="submit-wrap">'
     +'<button class="btn-submit" id="submitBtn" onclick="submitForm()">送信する →</button>'
-    +(previewId?'<div class="preview-note">⚠️ プレビューモード — 送信データは保存されません</div>':'')
-    +'</div>';
-  html+='<div class="brand">Powered by <a href="index.html">Formly</a></div>';
+    +(previewId?'<div class="pnote">⚠️ プレビューモード — 送信データは保存されません</div>':'')
+    +'</div><div class="brand">Powered by <a href="index.html">Formly</a></div>';
   fc.innerHTML=html;
   updateProgress(qs);
 }
 
 function renderQBlock(q){
-  var id=q.id||'';
-  var type=qType(q), label=qLabel(q), desc=qDesc(q), req=qReq(q), opts=qOpts(q), ph=qPh(q);
+  var id=q.id||'', type=qT(q), label=qL(q), desc=qD(q), req=qR(q), opts=qO(q), ph=qP(q);
   var fld='';
   switch(type){
-    case 'short': fld='<input class="ans-input" type="text" id="a_'+id+'" placeholder="'+(ph||'回答を入力...')+'" oninput="setAns(\''+id+'\',this.value)" onfocus="focusB(\'b_'+id+'\')" onblur="unfocusB(\'b_'+id+'\')">';break;
-    case 'long':  fld='<textarea class="ans-textarea" id="a_'+id+'" placeholder="'+(ph||'回答を入力...')+'" oninput="setAns(\''+id+'\',this.value)" onfocus="focusB(\'b_'+id+'\')" onblur="unfocusB(\'b_'+id+'\')"></textarea>';break;
-    case 'number':fld='<input class="ans-input" type="number" id="a_'+id+'" placeholder="0" oninput="setAns(\''+id+'\',this.value)">';break;
-    case 'email': fld='<input class="ans-input" type="email" id="a_'+id+'" placeholder="example@email.com" oninput="setAns(\''+id+'\',this.value)">';break;
-    case 'tel':   fld='<input class="ans-input" type="tel" id="a_'+id+'" placeholder="090-0000-0000" oninput="setAns(\''+id+'\',this.value)">';break;
-    case 'date':  fld='<input class="ans-input" type="date" id="a_'+id+'" oninput="setAns(\''+id+'\',this.value)">';break;
-    case 'time':  fld='<input class="ans-input" type="time" id="a_'+id+'" oninput="setAns(\''+id+'\',this.value)">';break;
-    case 'url':   fld='<input class="ans-input" type="url" id="a_'+id+'" placeholder="https://" oninput="setAns(\''+id+'\',this.value)">';break;
-    case 'select':fld='<select class="ans-select" id="a_'+id+'" onchange="setAns(\''+id+'\',this.value)">'
-      +'<option value="">選択してください</option>'
-      +opts.map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')
-      +'</select>';break;
-    case 'radio': fld='<div class="opts">'+opts.map(function(o){
-      return '<label class="opt-lbl" id="ro_'+id+'_'+esc(o)+'">'
-        +'<input type="radio" name="r_'+id+'" value="'+esc(o)+'" onchange="setAns(\''+id+'\',this.value);styleRadio(\''+id+'\',\''+esc(o)+'\')">'
-        +esc(o)+'</label>';
-    }).join('')+'</div>';break;
-    case 'checkbox':fld='<div class="opts">'+opts.map(function(o){
-      return '<label class="opt-lbl" id="co_'+id+'_'+esc(o)+'">'
-        +'<input type="checkbox" name="c_'+id+'" value="'+esc(o)+'" onchange="setChk(\''+id+'\');styleChk(\''+id+'\',\''+esc(o)+'\',this.checked)">'
-        +esc(o)+'</label>';
-    }).join('')+'</div>';break;
-    case 'rating':fld='<div class="stars" id="stars_'+id+'">'
-      +[1,2,3,4,5].map(function(n){return '<button class="star" data-v="'+n+'" onclick="setRating(\''+id+'\','+n+')">★</button>';}).join('')
-      +'</div>';break;
+    case 'short': fld='<input class="ans-input" id="a_'+id+'" type="text" placeholder="'+(ph||'回答を入力...')+'" oninput="setA(\''+id+'\',this.value)" onfocus="fB(\'b_'+id+'\')" onblur="uB(\'b_'+id+'\')">';break;
+    case 'long':  fld='<textarea class="ans-textarea" id="a_'+id+'" placeholder="'+(ph||'回答を入力...')+'" oninput="setA(\''+id+'\',this.value)" onfocus="fB(\'b_'+id+'\')" onblur="uB(\'b_'+id+'\')"></textarea>';break;
+    case 'number':fld='<input class="ans-input" id="a_'+id+'" type="number" placeholder="0" oninput="setA(\''+id+'\',this.value)">';break;
+    case 'email': fld='<input class="ans-input" id="a_'+id+'" type="email" placeholder="example@email.com" oninput="setA(\''+id+'\',this.value)">';break;
+    case 'tel':   fld='<input class="ans-input" id="a_'+id+'" type="tel" placeholder="090-0000-0000" oninput="setA(\''+id+'\',this.value)">';break;
+    case 'date':  fld='<input class="ans-input" id="a_'+id+'" type="date" oninput="setA(\''+id+'\',this.value)">';break;
+    case 'time':  fld='<input class="ans-input" id="a_'+id+'" type="time" oninput="setA(\''+id+'\',this.value)">';break;
+    case 'url':   fld='<input class="ans-input" id="a_'+id+'" type="url" placeholder="https://" oninput="setA(\''+id+'\',this.value)">';break;
+    case 'select':fld='<select class="ans-select" id="a_'+id+'" onchange="setA(\''+id+'\',this.value)"><option value="">選択してください</option>'+opts.map(function(o){return '<option value="'+e(o)+'">'+e(o)+'</option>';}).join('')+'</select>';break;
+    case 'radio': fld='<div class="opts">'+opts.map(function(o){return '<label class="opt-lbl" id="ro_'+id+'_'+e(o)+'">'+'<input type="radio" name="r_'+id+'" value="'+e(o)+'" onchange="setA(\''+id+'\',this.value);sRad(\''+id+'\',\''+e(o)+'\')" >'+e(o)+'</label>';}).join('')+'</div>';break;
+    case 'checkbox':fld='<div class="opts">'+opts.map(function(o){return '<label class="opt-lbl" id="co_'+id+'_'+e(o)+'">'+'<input type="checkbox" name="c_'+id+'" value="'+e(o)+'" onchange="setChk(\''+id+'\');sChk(\''+id+'\',\''+e(o)+'\',this.checked)">'+e(o)+'</label>';}).join('')+'</div>';break;
+    case 'rating':fld='<div class="stars" id="stars_'+id+'">'+[1,2,3,4,5].map(function(n){return '<button class="star" data-v="'+n+'" onclick="setRat(\''+id+'\','+n+')">★</button>';}).join('')+'</div>';break;
     case 'slider':
       answers[id]='50';
-      fld='<div>'
-        +'<input type="range" id="a_'+id+'" min="0" max="100" value="50" style="width:100%;accent-color:var(--p)" oninput="setAns(\''+id+'\',this.value);document.getElementById(\'sv_'+id+'\').textContent=this.value">'
+      fld='<div><input type="range" id="a_'+id+'" min="0" max="100" value="50" style="width:100%;accent-color:var(--p)" oninput="setA(\''+id+'\',this.value);document.getElementById(\'sv_'+id+'\').textContent=this.value">'
         +'<div class="slider-val" id="sv_'+id+'">50</div>'
-        +'<div class="slider-lbl"><span>0</span><span>100</span></div>'
-      +'</div>';break;
+        +'<div class="slider-lbl"><span>0</span><span>100</span></div></div>';break;
     case 'file':
       fld='<div class="file-drop" onclick="document.getElementById(\'f_'+id+'\').click()">'
-        +'<input type="file" id="f_'+id+'" style="display:none" onchange="setAns(\''+id+'\',this.files[0]?this.files[0].name:\'\');document.getElementById(\'fn_'+id+'\').textContent=this.files[0]?this.files[0].name:\'\'">'
-        +'<div style="font-size:1.3rem;margin-bottom:6px;">📎</div>'
-        +'<div style="font-size:.82rem;color:var(--muted);">クリックしてファイルを選択</div>'
-        +'<div class="file-name" id="fn_'+id+'"></div>'
-      +'</div>';break;
+        +'<input type="file" id="f_'+id+'" style="display:none" onchange="setA(\''+id+'\',this.files[0]?this.files[0].name:\'\');document.getElementById(\'fn_'+id+'\').textContent=this.files[0]?this.files[0].name:\'\'">'
+        +'<div style="font-size:1.2rem;margin-bottom:5px;">📎</div><div style="font-size:.8rem;color:var(--muted);">クリックして選択</div>'
+        +'<div class="file-name" id="fn_'+id+'"></div></div>';break;
     case 'agree':
       fld='<label class="agree-lbl" id="ag_'+id+'">'
-        +'<input type="checkbox" onchange="setAns(\''+id+'\',this.checked);document.getElementById(\'ag_'+id+'\').classList.toggle(\'chk\',this.checked)">'
-        +esc(label)
-      +'</label>';break;
-    default: fld='<input class="ans-input" id="a_'+id+'" placeholder="回答を入力..." oninput="setAns(\''+id+'\',this.value)">';
+        +'<input type="checkbox" onchange="setA(\''+id+'\',this.checked);document.getElementById(\'ag_'+id+'\').classList.toggle(\'chk\',this.checked)">'
+        +e(label)+'</label>';break;
+    default: fld='<input class="ans-input" id="a_'+id+'" placeholder="回答を入力..." oninput="setA(\''+id+'\',this.value)">';
   }
   return '<div class="qblock" id="b_'+id+'">'
-    +'<div class="qlabel">'+esc(label)+(req?'<span class="qreq">*</span>':'')+'</div>'
-    +(desc?'<div class="qdesc">'+esc(desc)+'</div>':'')
-    +(type!=='agree'?fld:'')
-    +(type==='agree'?fld:'')
+    +'<div class="qlabel">'+e(label)+(req?'<span class="qreq">*</span>':'')+'</div>'
+    +(desc?'<div class="qdesc">'+e(desc)+'</div>':'')
+    +(type!=='agree'?fld:'')+(type==='agree'?fld:'')
     +'<div class="errmsg">この質問への回答は必須です</div>'
   +'</div>';
 }
 
-function setAns(id,v){answers[id]=v;updateProgress(null);}
-function setChk(id){
-  answers[id]=Array.from(document.querySelectorAll('input[name="c_'+id+'"]:checked')).map(function(i){return i.value;});
-  updateProgress(null);
-}
-function setRating(id,v){
+function setA(id,v){answers[id]=v;updateProgress(null);}
+function setChk(id){answers[id]=Array.from(document.querySelectorAll('input[name="c_'+id+'"]:checked')).map(function(i){return i.value;});updateProgress(null);}
+function setRat(id,v){
   answers[id]=v;
   document.querySelectorAll('#stars_'+id+' .star').forEach(function(b){
     if(+b.dataset.v<=v){b.classList.add('on');b.style.color='#FEC02F';}
@@ -282,16 +248,10 @@ function setRating(id,v){
   });
   updateProgress(null);
 }
-function styleRadio(id,v){
-  document.querySelectorAll('input[name="r_'+id+'"]').forEach(function(i){
-    var el=document.getElementById('ro_'+id+'_'+i.value);
-    if(el)el.classList.toggle('chk',i.value===v);
-  });
-}
-function styleChk(id,v,chk){var el=document.getElementById('co_'+id+'_'+v);if(el)el.classList.toggle('chk',chk);}
-function focusB(id){var el=document.getElementById(id);if(el)el.classList.add('focused');}
-function unfocusB(id){var el=document.getElementById(id);if(el)el.classList.remove('focused');}
-
+function sRad(id,v){document.querySelectorAll('input[name="r_'+id+'"]').forEach(function(i){var el=document.getElementById('ro_'+id+'_'+i.value);if(el)el.classList.toggle('chk',i.value===v);});}
+function sChk(id,v,c){var el=document.getElementById('co_'+id+'_'+v);if(el)el.classList.toggle('chk',c);}
+function fB(id){var el=document.getElementById(id);if(el)el.classList.add('focused');}
+function uB(id){var el=document.getElementById(id);if(el)el.classList.remove('focused');}
 function updateProgress(qs){
   var allQs=(formData&&formData.questions)||qs||[];
   if(!allQs.length)return;
@@ -304,14 +264,12 @@ async function submitForm(){
   var valid=true;
   qs.forEach(function(q){
     var bl=document.getElementById('b_'+q.id);
-    if(!bl)return;
-    bl.classList.remove('err');
-    if(qReq(q)){var a=answers[q.id];var emp=Array.isArray(a)?a.length===0:(!a&&a!==0&&a!==false);if(emp){bl.classList.add('err');valid=false;}}
+    if(bl)bl.classList.remove('err');
+    if(qR(q)){var a=answers[q.id];var emp=Array.isArray(a)?a.length===0:(!a&&a!==0&&a!==false);if(emp){if(bl)bl.classList.add('err');valid=false;}}
   });
   if(!valid){var el=document.querySelector('.qblock.err');if(el)el.scrollIntoView({behavior:'smooth',block:'center'});return;}
   if(previewId){showThanks();return;}
-  var btn=document.getElementById('submitBtn');
-  btn.disabled=true;btn.textContent='送信中...';
+  var btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='送信中...';
   try{
     await db.collection('responses').add({formId:formId,answers:answers,submittedAt:new Date().toISOString()});
     await db.collection('forms').doc(formId).update({responseCount:firebase.firestore.FieldValue.increment(1)});
@@ -320,23 +278,22 @@ async function submitForm(){
 }
 
 function showThanks(){
-  document.getElementById('formContent').style.display='none';
+  var st=formData&&formData.settings||{};
+  document.getElementById('fc').style.display='none';
   document.getElementById('pbar').style.width='100%';
-  var t=document.getElementById('thanks');t.style.display='block';
+  document.getElementById('thanksTitle').textContent='送信完了！';
+  document.getElementById('thanksMsg').textContent=st.thankMsg||'ご回答ありがとうございました。';
+  document.getElementById('thanks').style.display='block';
   launchConfetti();
+  if(st.redirectUrl){setTimeout(function(){location.href=st.redirectUrl;},2000);}
 }
 function launchConfetti(){
   var c=document.getElementById('confetti');c.width=innerWidth;c.height=innerHeight;
   var ctx=c.getContext('2d');
-  var bits=[];
-  for(var i=0;i<90;i++)bits.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight-innerHeight,w:Math.random()*9+3,h:Math.random()*5+2,color:['#6C63FF','#FF6584','#FEC02F','#06D6A0','#00B4D8'][Math.floor(Math.random()*5)],rot:Math.random()*360,sp:Math.random()*3+1});
-  var fr=0;
-  function draw(){ctx.clearRect(0,0,c.width,c.height);bits.forEach(function(b){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.rot*Math.PI/180);ctx.fillStyle=b.color;ctx.fillRect(-b.w/2,-b.h/2,b.w,b.h);ctx.restore();b.y+=b.sp;b.rot+=2;if(b.y>c.height)b.y=-10;});if(fr++<200)requestAnimationFrame(draw);else ctx.clearRect(0,0,c.width,c.height);}
-  draw();
+  var bits=[];for(var i=0;i<90;i++)bits.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight-innerHeight,w:Math.random()*9+3,h:Math.random()*5+2,color:['#6C63FF','#FF6584','#FEC02F','#06D6A0','#00B4D8'][Math.floor(Math.random()*5)],rot:Math.random()*360,sp:Math.random()*3+1});
+  var fr=0;function draw(){ctx.clearRect(0,0,c.width,c.height);bits.forEach(function(b){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.rot*Math.PI/180);ctx.fillStyle=b.color;ctx.fillRect(-b.w/2,-b.h/2,b.w,b.h);ctx.restore();b.y+=b.sp;b.rot+=2;if(b.y>c.height)b.y=-10;});if(fr++<200)requestAnimationFrame(draw);else ctx.clearRect(0,0,c.width,c.height);}draw();
 }
-
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
+function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 init();
 </script>
 </body>
