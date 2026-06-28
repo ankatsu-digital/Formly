@@ -4,122 +4,156 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>フォームビルダー — Formly</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-<!-- Firebase compat (グローバル変数として使えるので onclick から呼べる) -->
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
-  :root {
-    --purple:#6C63FF; --purple-light:#8B85FF; --purple-dark:#4A42CC;
-    --coral:#FF6584; --dark:#1A1A2E; --bg:#F8F9FF; --bg2:#EEEEFF;
-    --text:#2D2D4E; --muted:#7B7B9E; --white:#FFFFFF;
-    --border:rgba(108,99,255,0.12);
-  }
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+:root{
+  --p:#6C63FF;--pd:#4A42CC;--coral:#FF6584;
+  --dark:#1A1A2E;--bg:#F8F9FF;--bg2:#EEEEFF;
+  --text:#2D2D4E;--muted:#7B7B9E;--white:#fff;
+  --border:rgba(108,99,255,0.13);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
 
-  .topbar{height:60px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;z-index:10;}
-  .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;background:linear-gradient(135deg,var(--purple),var(--coral));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none;}
-  .sep{width:1px;height:24px;background:var(--border);}
-  .form-name-input{border:none;outline:none;font-size:0.95rem;font-weight:600;color:var(--text);font-family:'Syne',sans-serif;background:transparent;width:240px;}
-  .form-name-input::placeholder{color:var(--muted);}
-  .topbar-right{margin-left:auto;display:flex;gap:10px;align-items:center;}
-  .btn-sm{padding:8px 18px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:all 0.2s;}
-  .btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text);}
-  .btn-outline:hover{border-color:var(--purple);color:var(--purple);}
-  .btn-primary-sm{background:var(--purple);color:#fff;box-shadow:0 3px 12px rgba(108,99,255,0.30);}
-  .btn-primary-sm:hover{background:var(--purple-dark);}
-  .theme-dot{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.2s;}
-  .theme-dot.active{border-color:var(--text);transform:scale(1.2);}
+/* TOPBAR */
+.topbar{height:56px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:20;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;background:linear-gradient(135deg,var(--p),var(--coral));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none;}
+.sep{width:1px;height:22px;background:var(--border);}
+.title-input{border:none;outline:none;font-size:0.92rem;font-weight:600;color:var(--text);font-family:'Inter',sans-serif;background:transparent;width:200px;}
+.title-input::placeholder{color:var(--muted);}
+.topbar-r{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.theme-label{font-size:0.7rem;color:var(--muted);font-weight:600;}
+.dot{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.dot.active{border-color:var(--dark);transform:scale(1.18);}
+.btn{padding:7px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:all 0.18s;white-space:nowrap;}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text);}
+.btn-outline:hover{border-color:var(--p);color:var(--p);}
+.btn-pub{background:var(--p);color:#fff;box-shadow:0 3px 12px rgba(108,99,255,0.28);}
+.btn-pub:hover{background:var(--pd);}
 
-  .builder-main{display:flex;flex:1;overflow:hidden;}
+/* LAYOUT */
+.wrap{display:flex;flex:1;overflow:hidden;}
 
-  /* LEFT */
-  .left-panel{width:300px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
-  .panel-tabs{display:flex;border-bottom:1px solid var(--border);}
-  .panel-tab{flex:1;padding:12px 8px;text-align:center;font-size:0.8rem;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.2s;background:none;border-left:none;border-right:none;border-top:none;font-family:'Inter',sans-serif;}
-  .panel-tab.active{color:var(--purple);border-bottom:2px solid var(--purple);}
-  .panel-body{flex:1;overflow-y:auto;padding:12px;}
+/* LEFT */
+.left{width:268px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.tabs{display:flex;border-bottom:1px solid var(--border);}
+.tab{flex:1;padding:11px 6px;text-align:center;font-size:0.78rem;font-weight:600;cursor:pointer;color:var(--muted);border:none;border-bottom:2px solid transparent;background:transparent;font-family:'Inter',sans-serif;transition:all 0.15s;}
+.tab.on{color:var(--p);border-bottom-color:var(--p);}
+.panel{flex:1;overflow-y:auto;padding:10px;}
+.panel.hide{display:none;}
 
-  .questions-list{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
-  .question-item{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px;}
-  .question-item:hover,.question-item.active{border-color:var(--purple);background:rgba(108,99,255,0.04);}
-  .q-icon{width:28px;height:28px;border-radius:7px;background:rgba(108,99,255,0.10);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;}
-  .q-info{flex:1;min-width:0;}
-  .q-label{font-size:0.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .q-type{font-size:0.7rem;color:var(--muted);}
-  .q-num{font-size:0.68rem;color:var(--muted);font-weight:700;width:14px;text-align:center;flex-shrink:0;}
-  .q-del{background:none;border:none;cursor:pointer;color:var(--muted);padding:3px;border-radius:4px;font-size:0.75rem;opacity:0;transition:opacity 0.2s;}
-  .question-item:hover .q-del{opacity:1;}
-  .q-del:hover{color:var(--coral);}
+/* Question list */
+.qlist{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.qi{background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:border-color 0.15s;}
+.qi:hover,.qi.on{border-color:var(--p);background:rgba(108,99,255,0.04);}
+.qi-ico{width:26px;height:26px;border-radius:6px;background:rgba(108,99,255,0.10);display:flex;align-items:center;justify-content:center;font-size:0.82rem;flex-shrink:0;}
+.qi-info{flex:1;min-width:0;}
+.qi-label{font-size:0.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.qi-type{font-size:0.68rem;color:var(--muted);}
+.qi-num{font-size:0.65rem;color:var(--muted);font-weight:700;width:14px;text-align:right;flex-shrink:0;}
+.qi-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.7rem;padding:2px 4px;border-radius:3px;opacity:0;transition:opacity 0.15s;}
+.qi:hover .qi-del{opacity:1;}
+.qi-del:hover{color:var(--coral);}
 
-  .add-fields-title{font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;}
-  .field-types-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
-  .field-type-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;font-size:0.68rem;font-weight:600;color:var(--muted);transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:'Inter',sans-serif;}
-  .field-type-btn:hover{border-color:var(--purple);color:var(--purple);background:rgba(108,99,255,0.06);}
-  .field-type-btn .ft-icon{font-size:1rem;}
+/* Add fields */
+.add-lbl{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:7px;}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.fb{background:var(--bg);border:1.5px solid var(--border);border-radius:7px;padding:7px 3px;text-align:center;cursor:pointer;font-size:0.65rem;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-family:'Inter',sans-serif;transition:all 0.15s;}
+.fb:hover{border-color:var(--p);color:var(--p);background:rgba(108,99,255,0.05);}
+.fb .fi{font-size:0.95rem;}
 
-  .setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
-  .setting-label{font-size:0.85rem;font-weight:500;}
-  .setting-sub{font-size:0.72rem;color:var(--muted);}
-  .toggle-btn{width:38px;height:20px;border-radius:10px;background:var(--bg2);border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;}
-  .toggle-btn.on{background:var(--purple);}
-  .toggle-btn::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;left:3px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);}
-  .toggle-btn.on::after{left:21px;}
-  .setting-input{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:0.83rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;margin-top:6px;}
-  .setting-input:focus{border-color:var(--purple);}
+/* Settings tab */
+.srow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:0.82rem;font-weight:500;}
+.ssub{font-size:0.7rem;color:var(--muted);}
+.tog{width:36px;height:19px;border-radius:10px;background:var(--bg2);border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;}
+.tog.on{background:var(--p);}
+.tog::after{content:'';position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:3px;left:3px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.18);}
+.tog.on::after{left:20px;}
+.sinput{width:100%;padding:7px 9px;border:1.5px solid var(--border);border-radius:7px;font-size:0.8rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;margin-top:5px;}
+.sinput:focus{border-color:var(--p);}
 
-  /* CENTER */
-  .center-panel{flex:1;overflow-y:auto;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:0;background:var(--bg);}
-  .form-header-card{background:var(--white);border-radius:16px 16px 0 0;padding:28px 32px 20px;width:100%;max-width:660px;border:1.5px solid var(--border);border-bottom:none;}
-  .form-color-bar{height:6px;border-radius:3px;margin-bottom:20px;}
-  .canvas-title-input{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;border:none;outline:none;background:transparent;width:100%;color:var(--dark);margin-bottom:6px;}
-  .canvas-desc-input{font-family:'Inter',sans-serif;font-size:0.88rem;color:var(--muted);border:none;outline:none;background:transparent;width:100%;resize:none;line-height:1.6;}
+/* CENTER */
+.center{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:0;background:#F0F1FA;}
+.fhdr{background:var(--white);border-radius:14px 14px 0 0;padding:24px 28px 16px;width:100%;max-width:640px;border:1.5px solid var(--border);border-bottom:none;}
+.cbar{height:5px;border-radius:3px;margin-bottom:18px;}
+.ctitle{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;border:none;outline:none;background:transparent;width:100%;color:var(--dark);margin-bottom:5px;}
+.cdesc{font-size:0.85rem;color:var(--muted);border:none;outline:none;background:transparent;width:100%;resize:none;font-family:'Inter',sans-serif;line-height:1.55;}
 
-  .question-card{background:var(--white);border:1.5px solid var(--border);padding:22px 32px;width:100%;max-width:660px;transition:border-color 0.2s;cursor:pointer;position:relative;}
-  .question-card:hover{border-color:rgba(108,99,255,0.25);}
-  .question-card.active{border-color:var(--purple);border-left:4px solid var(--purple);}
-  .question-card:last-of-type{border-radius:0 0 16px 16px;}
-  .card-num{font-size:0.7rem;color:var(--muted);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
-  .card-required{color:var(--coral);}
-  .card-q-input{font-size:0.98rem;font-weight:600;border:none;outline:none;background:transparent;width:100%;color:var(--text);font-family:'Inter',sans-serif;margin-bottom:4px;}
-  .card-desc-input{font-size:0.82rem;color:var(--muted);border:none;outline:none;background:transparent;width:100%;font-family:'Inter',sans-serif;margin-bottom:12px;resize:none;}
-  .card-actions{display:none;position:absolute;bottom:-1px;right:12px;background:var(--white);border:1.5px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:4px 10px;gap:4px;align-items:center;}
-  .question-card.active .card-actions{display:flex;}
-  .action-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.75rem;font-weight:600;padding:4px 7px;border-radius:5px;font-family:'Inter',sans-serif;transition:all 0.15s;}
-  .action-btn:hover{background:var(--bg);color:var(--purple);}
-  .action-btn.del:hover{color:var(--coral);}
+.qcard{background:var(--white);border:1.5px solid var(--border);padding:18px 28px 14px;width:100%;max-width:640px;cursor:pointer;position:relative;transition:border-color 0.15s;}
+.qcard:last-of-type{border-radius:0 0 14px 14px;}
+.qcard:hover{border-color:rgba(108,99,255,0.22);}
+.qcard.on{border-color:var(--p);border-left:4px solid var(--p);}
+.qnum{font-size:0.67rem;color:var(--muted);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.req{color:var(--coral);}
+.qinput{font-size:0.94rem;font-weight:600;border:none;outline:none;background:transparent;width:100%;color:var(--text);font-family:'Inter',sans-serif;margin-bottom:3px;}
+.qdesc{font-size:0.8rem;color:var(--muted);border:none;outline:none;background:transparent;width:100%;font-family:'Inter',sans-serif;margin-bottom:10px;resize:none;}
 
-  .preview-input{width:100%;padding:10px 13px;border:1.5px solid var(--bg2);border-radius:9px;font-size:0.88rem;background:var(--bg);color:var(--muted);font-family:'Inter',sans-serif;pointer-events:none;}
-  .preview-textarea{width:100%;padding:10px 13px;border:1.5px solid var(--bg2);border-radius:9px;font-size:0.88rem;background:var(--bg);color:var(--muted);font-family:'Inter',sans-serif;height:72px;resize:none;pointer-events:none;}
-  .preview-options{display:flex;flex-direction:column;gap:6px;}
-  .preview-option{display:flex;align-items:center;gap:9px;padding:9px 13px;border:1.5px solid var(--bg2);border-radius:9px;background:var(--bg);font-size:0.88rem;color:var(--muted);}
-  .opt-circle{width:14px;height:14px;border-radius:50%;border:2px solid var(--bg2);flex-shrink:0;}
-  .opt-square{width:14px;height:14px;border-radius:3px;border:2px solid var(--bg2);flex-shrink:0;}
-  .btn-edit-opt{background:rgba(108,99,255,0.09);border:none;cursor:pointer;color:var(--purple);font-size:0.72rem;font-weight:600;padding:3px 7px;border-radius:5px;margin-left:auto;font-family:'Inter',sans-serif;}
-  .btn-add-opt{background:none;border:none;cursor:pointer;color:var(--purple);font-size:0.8rem;font-weight:600;padding:4px 0;display:flex;align-items:center;gap:5px;font-family:'Inter',sans-serif;margin-top:4px;}
-  .stars-preview{display:flex;gap:5px;}
-  .star-p{font-size:1.3rem;color:#FEC02F;}
+/* field previews */
+.pinput{width:100%;padding:9px 12px;border:1.5px solid var(--bg2);border-radius:8px;font-size:0.85rem;background:var(--bg);color:var(--muted);font-family:'Inter',sans-serif;pointer-events:none;}
+.ptextarea{width:100%;padding:9px 12px;border:1.5px solid var(--bg2);border-radius:8px;font-size:0.85rem;background:var(--bg);color:var(--muted);font-family:'Inter',sans-serif;height:65px;resize:none;pointer-events:none;}
+.popts{display:flex;flex-direction:column;gap:5px;}
+.popt{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--bg2);border-radius:8px;background:var(--bg);font-size:0.85rem;color:var(--muted);}
+.ocircle{width:13px;height:13px;border-radius:50%;border:2px solid var(--bg2);flex-shrink:0;}
+.osquare{width:13px;height:13px;border-radius:3px;border:2px solid var(--bg2);flex-shrink:0;}
+.btn-eopt{background:rgba(108,99,255,0.09);border:none;cursor:pointer;color:var(--p);font-size:0.68rem;font-weight:600;padding:2px 6px;border-radius:4px;margin-left:auto;font-family:'Inter',sans-serif;}
+.btn-aopt{background:none;border:none;cursor:pointer;color:var(--p);font-size:0.77rem;font-weight:600;padding:3px 0;display:flex;align-items:center;gap:4px;font-family:'Inter',sans-serif;margin-top:3px;}
+.pstars{display:flex;gap:4px;font-size:1.2rem;color:#FEC02F;}
 
-  .add-question-row{width:100%;max-width:660px;margin-top:14px;display:flex;justify-content:center;}
-  .btn-add-q{background:var(--white);border:1.5px dashed rgba(108,99,255,0.25);border-radius:10px;padding:12px 28px;cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--purple);font-family:'Inter',sans-serif;transition:all 0.2s;display:flex;align-items:center;gap:7px;}
-  .btn-add-q:hover{border-color:var(--purple);background:rgba(108,99,255,0.04);}
+/* 条件分岐UI（カード内） */
+.branch-box{margin-top:12px;background:rgba(108,99,255,0.04);border:1.5px solid rgba(108,99,255,0.16);border-radius:10px;padding:12px;}
+.branch-title{font-size:0.72rem;font-weight:700;color:var(--p);margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.brow{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:0.77rem;}
+.brow:last-child{margin-bottom:0;}
+.b-opt{background:rgba(108,99,255,0.08);border-radius:5px;padding:3px 8px;font-weight:600;color:var(--p);min-width:60px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+.b-arrow{color:var(--muted);font-size:0.75rem;flex-shrink:0;}
+.b-sel{flex:1;padding:4px 7px;border:1.5px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text);outline:none;cursor:pointer;}
 
-  /* RIGHT */
-  .right-panel{width:260px;flex-shrink:0;background:var(--white);border-left:1px solid var(--border);overflow-y:auto;padding:14px;}
-  .right-title{font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;}
-  .prop-row{margin-bottom:14px;}
-  .prop-label{font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:5px;display:block;}
-  .prop-input{width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:0.83rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;}
-  .prop-input:focus{border-color:var(--purple);}
-  .prop-select{width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:0.83rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
+/* card actions */
+.cactions{display:none;position:absolute;bottom:-1px;right:10px;background:var(--white);border:1.5px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:3px 8px;gap:3px;align-items:center;}
+.qcard.on .cactions{display:flex;}
+.cact{background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.72rem;font-weight:600;padding:3px 6px;border-radius:4px;font-family:'Inter',sans-serif;transition:all 0.12s;}
+.cact:hover{background:var(--bg);color:var(--p);}
+.cact.del:hover{color:var(--coral);}
 
-  .toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--dark);color:#fff;border-radius:10px;padding:12px 20px;font-size:0.85rem;font-weight:500;opacity:0;pointer-events:none;transition:opacity 0.3s;box-shadow:0 6px 24px rgba(0,0,0,0.25);}
-  .toast.show{opacity:1;pointer-events:auto;}
+.add-row{width:100%;max-width:640px;margin-top:12px;display:flex;justify-content:center;}
+.btn-addq{background:var(--white);border:1.5px dashed rgba(108,99,255,0.22);border-radius:9px;padding:11px 24px;cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--p);font-family:'Inter',sans-serif;transition:all 0.15s;display:flex;align-items:center;gap:6px;}
+.btn-addq:hover{border-color:var(--p);background:rgba(108,99,255,0.04);}
+
+/* RIGHT */
+.right{width:240px;flex-shrink:0;background:var(--white);border-left:1px solid var(--border);overflow-y:auto;padding:12px;}
+.rtitle{font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;}
+.prow{margin-bottom:12px;}
+.plbl{font-size:0.75rem;font-weight:600;color:var(--text);margin-bottom:4px;display:block;}
+.pinp{width:100%;padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:0.8rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;}
+.pinp:focus{border-color:var(--p);}
+.psel{width:100%;padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:0.8rem;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
+.req-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;}
+
+/* 公開モーダル */
+.overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(26,26,46,0.65);backdrop-filter:blur(6px);align-items:center;justify-content:center;}
+.overlay.open{display:flex;animation:fi 0.2s;}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.modal{background:var(--white);border-radius:20px;padding:32px;width:100%;max-width:460px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.22);animation:su 0.28s cubic-bezier(0.22,1,0.36,1);}
+@keyframes su{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.modal-close{position:absolute;top:14px;right:14px;background:var(--bg);border:none;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:0.88rem;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.modal h2{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:4px;}
+.modal .msub{font-size:0.82rem;color:var(--muted);margin-bottom:20px;}
+.url-box{background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:10px 13px;font-size:0.8rem;color:var(--text);font-family:monospace;word-break:break-all;margin-bottom:10px;}
+.mbtn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--p);color:#fff;border:none;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s;margin-right:6px;}
+.mbtn:hover{background:var(--pd);}
+.mbtn.ghost{background:transparent;border:1.5px solid var(--border);color:var(--text);}
+.mbtn.ghost:hover{border-color:var(--p);color:var(--p);}
+#qrWrap{text-align:center;margin:16px 0 0;}
+#qrWrap canvas{border-radius:10px;display:block;margin:0 auto 10px;}
+
+.toast{position:fixed;bottom:18px;right:18px;z-index:999;background:var(--dark);color:#fff;border-radius:9px;padding:11px 18px;font-size:0.82rem;font-weight:500;opacity:0;pointer-events:none;transition:opacity 0.25s;box-shadow:0 6px 22px rgba(0,0,0,0.22);}
+.toast.show{opacity:1;}
 </style>
 </head>
 <body>
@@ -127,81 +161,96 @@
 <div class="topbar">
   <a href="index.html" class="logo">Formly</a>
   <div class="sep"></div>
-  <input class="form-name-input" id="formTitle" placeholder="フォームのタイトル..." value="新しいフォーム">
-  <div class="topbar-right">
-    <div style="display:flex;gap:5px;align-items:center;">
-      <span style="font-size:0.72rem;color:var(--muted);font-weight:600;">テーマ：</span>
-      <div class="theme-dot active" style="background:#6C63FF;" data-color="#6C63FF" onclick="setTheme(this)"></div>
-      <div class="theme-dot" style="background:#FF6584;" data-color="#FF6584" onclick="setTheme(this)"></div>
-      <div class="theme-dot" style="background:#00B4D8;" data-color="#00B4D8" onclick="setTheme(this)"></div>
-      <div class="theme-dot" style="background:#06D6A0;" data-color="#06D6A0" onclick="setTheme(this)"></div>
-      <div class="theme-dot" style="background:#F77F00;" data-color="#F77F00" onclick="setTheme(this)"></div>
-    </div>
-    <button class="btn-sm btn-outline" onclick="previewForm()">👁 プレビュー</button>
-    <button class="btn-sm btn-primary-sm" onclick="saveForm()">💾 保存して公開</button>
+  <input class="title-input" id="topTitle" placeholder="フォームのタイトル..." value="新しいフォーム">
+  <div class="topbar-r">
+    <span class="theme-label">テーマ：</span>
+    <div class="dot active" style="background:#6C63FF" data-c="#6C63FF" onclick="setTheme(this)"></div>
+    <div class="dot" style="background:#FF6584" data-c="#FF6584" onclick="setTheme(this)"></div>
+    <div class="dot" style="background:#00B4D8" data-c="#00B4D8" onclick="setTheme(this)"></div>
+    <div class="dot" style="background:#06D6A0" data-c="#06D6A0" onclick="setTheme(this)"></div>
+    <div class="dot" style="background:#F77F00" data-c="#F77F00" onclick="setTheme(this)"></div>
+    <button class="btn btn-outline" onclick="previewForm()">👁 プレビュー</button>
+    <button class="btn btn-pub" onclick="saveForm()">💾 保存して公開</button>
   </div>
 </div>
 
-<div class="builder-main">
+<div class="wrap">
   <!-- LEFT -->
-  <div class="left-panel">
-    <div class="panel-tabs">
-      <button class="panel-tab active" onclick="switchTab('questions',this)">質問</button>
-      <button class="panel-tab" onclick="switchTab('settings',this)">設定</button>
+  <div class="left">
+    <div class="tabs">
+      <button class="tab on" onclick="switchTab('q',this)">質問</button>
+      <button class="tab" onclick="switchTab('s',this)">設定</button>
     </div>
-    <div class="panel-body" id="tabQuestions">
-      <div class="questions-list" id="questionsList"></div>
-      <div class="add-fields-title">フィールドを追加</div>
-      <div class="field-types-grid" id="fieldGrid"></div>
+
+    <!-- 質問タブ -->
+    <div class="panel" id="tabQ">
+      <div class="qlist" id="qlist"></div>
+      <div class="add-lbl">フィールドを追加</div>
+      <div class="fgrid" id="fgrid"></div>
     </div>
-    <div class="panel-body" id="tabSettings" style="display:none">
-      <div class="setting-row">
-        <div><div class="setting-label">締切日時</div><div class="setting-sub">自動で終了</div></div>
-        <button class="toggle-btn" id="tgDeadline" onclick="toggleSetting(this,'deadlineInput')"></button>
+
+    <!-- 設定タブ -->
+    <div class="panel hide" id="tabS">
+      <div class="srow">
+        <div><div class="slbl">締切日時</div><div class="ssub">自動で終了</div></div>
+        <button class="tog" id="tgD" onclick="togSet(this,'iD')"></button>
       </div>
-      <input class="setting-input" type="datetime-local" id="deadlineInput" style="display:none">
-      <div class="setting-row">
-        <div><div class="setting-label">定員制限</div><div class="setting-sub">最大回答数</div></div>
-        <button class="toggle-btn" id="tgCapacity" onclick="toggleSetting(this,'capacityInput')"></button>
+      <input class="sinput" type="datetime-local" id="iD" style="display:none">
+      <div class="srow">
+        <div><div class="slbl">定員制限</div><div class="ssub">最大回答数</div></div>
+        <button class="tog" id="tgC" onclick="togSet(this,'iC')"></button>
       </div>
-      <input class="setting-input" type="number" id="capacityInput" placeholder="定員数（例：50）" style="display:none">
-      <div class="setting-row">
-        <div><div class="setting-label">パスワード保護</div><div class="setting-sub">限定公開</div></div>
-        <button class="toggle-btn" id="tgPassword" onclick="toggleSetting(this,'passwordInput')"></button>
+      <input class="sinput" type="number" id="iC" placeholder="例：50" style="display:none">
+      <div class="srow">
+        <div><div class="slbl">パスワード保護</div><div class="ssub">限定公開</div></div>
+        <button class="tog" id="tgP" onclick="togSet(this,'iP')"></button>
       </div>
-      <input class="setting-input" type="text" id="passwordInput" placeholder="パスワードを設定" style="display:none">
-      <div class="setting-row">
-        <div><div class="setting-label">1人1回に制限</div><div class="setting-sub">ログインユーザー</div></div>
-        <button class="toggle-btn" id="tgOne" onclick="this.classList.toggle('on')"></button>
+      <input class="sinput" type="text" id="iP" placeholder="パスワードを設定" style="display:none">
+      <div class="srow">
+        <div><div class="slbl">1人1回に制限</div><div class="ssub">ログインユーザー</div></div>
+        <button class="tog" id="tgO" onclick="this.classList.toggle('on')"></button>
       </div>
-      <div style="margin-top:16px;">
-        <div class="add-fields-title">完了メッセージ</div>
-        <input class="setting-input" id="thankMsg" value="ご回答ありがとうございました！">
+      <div style="margin-top:14px">
+        <div class="add-lbl">完了メッセージ</div>
+        <input class="sinput" id="thankMsg" value="ご回答ありがとうございました！">
       </div>
     </div>
   </div>
 
   <!-- CENTER -->
-  <div class="center-panel" id="centerPanel">
-    <div class="form-header-card">
-      <div class="form-color-bar" id="colorBar" style="background:var(--purple)"></div>
-      <input class="canvas-title-input" id="canvasTitle" placeholder="フォームタイトル" value="新しいフォーム"
-        oninput="document.getElementById('formTitle').value=this.value">
-      <textarea class="canvas-desc-input" id="canvasDesc" placeholder="フォームの説明（任意）" rows="2"></textarea>
+  <div class="center">
+    <div class="fhdr">
+      <div class="cbar" id="cbar" style="background:var(--p)"></div>
+      <input class="ctitle" id="cTitle" placeholder="フォームタイトル" value="新しいフォーム"
+        oninput="document.getElementById('topTitle').value=this.value">
+      <textarea class="cdesc" id="cDesc" placeholder="フォームの説明（任意）" rows="2"></textarea>
     </div>
-    <div id="questionsCanvas"></div>
-    <div class="add-question-row">
-      <button class="btn-add-q" onclick="addQuestion('short')">
-        ＋ 質問を追加
-      </button>
+    <div id="canvas"></div>
+    <div class="add-row">
+      <button class="btn-addq" onclick="addQ('short')">＋ 質問を追加</button>
     </div>
   </div>
 
   <!-- RIGHT -->
-  <div class="right-panel" id="rightPanel">
-    <div class="right-title">質問の設定</div>
-    <div id="questionProps">
-      <p style="font-size:0.83rem;color:var(--muted);line-height:1.7;">左のキャンバスから<br>質問をクリックして<br>設定を編集できます</p>
+  <div class="right">
+    <div class="rtitle">質問の設定</div>
+    <div id="rprops"><p style="font-size:0.8rem;color:var(--muted);line-height:1.7;">質問をクリックして設定を編集</p></div>
+  </div>
+</div>
+
+<!-- 公開完了モーダル -->
+<div class="overlay" id="pubModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closePub()">✕</button>
+    <h2>🎉 公開しました！</h2>
+    <div class="msub">フォームのURLとQRコードを共有できます</div>
+    <div class="url-box" id="pubUrl"></div>
+    <button class="mbtn" onclick="copyUrl()">📋 URLをコピー</button>
+    <a id="pubLink" href="#" target="_blank" class="mbtn ghost">🔗 フォームを開く</a>
+    <div id="qrWrap">
+      <canvas id="qrCanvas"></canvas>
+      <button class="mbtn" onclick="dlQr()">⬇️ QRコードを保存</button>
+      <a id="dashLink" href="dashboard.html" class="mbtn ghost">📊 ダッシュボードへ</a>
     </div>
   </div>
 </div>
@@ -209,400 +258,324 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== Firebase 初期化 =====
 firebase.initializeApp({
-  apiKey: "AIzaSyDarChAwm9_4t4CRfPiM5dVI84MjQPe5ms",
-  authDomain: "senkyo-29a84.firebaseapp.com",
-  projectId: "senkyo-29a84",
-  storageBucket: "senkyo-29a84.firebasestorage.app",
-  messagingSenderId: "734912107336",
-  appId: "1:734912107336:web:b57350fc64038f7611997d"
+  apiKey:"AIzaSyDarChAwm9_4t4CRfPiM5dVI84MjQPe5ms",
+  authDomain:"senkyo-29a84.firebaseapp.com",
+  projectId:"senkyo-29a84",
+  storageBucket:"senkyo-29a84.firebasestorage.app",
+  messagingSenderId:"734912107336",
+  appId:"1:734912107336:web:b57350fc64038f7611997d"
 });
-const db = firebase.firestore();
-const auth = firebase.auth();
+var db=firebase.firestore(), auth=firebase.auth();
+var questions=[], activeId=null, theme='#6C63FF', currentUser=null, formId=null;
 
-// ===== 状態 =====
-var questions = [];
-var activeQid = null;
-var themeColor = '#6C63FF';
-var currentUser = null;
-var formId = null;
+auth.onAuthStateChanged(function(u){currentUser=u;});
 
-auth.onAuthStateChanged(function(user){ currentUser = user; });
-
-// ===== フィールド定義 =====
-var FIELD_TYPES = [
-  {type:'short',  icon:'✏️', label:'短文'},
-  {type:'long',   icon:'📝', label:'長文'},
-  {type:'number', icon:'🔢', label:'数字'},
-  {type:'email',  icon:'📧', label:'メール'},
-  {type:'tel',    icon:'📞', label:'電話'},
-  {type:'date',   icon:'📅', label:'日付'},
-  {type:'time',   icon:'⏰', label:'時間'},
-  {type:'radio',  icon:'🔘', label:'ラジオ'},
-  {type:'checkbox',icon:'☑️',label:'チェック'},
-  {type:'select', icon:'▾',  label:'プルダウン'},
-  {type:'rating', icon:'⭐', label:'評価'},
-  {type:'slider', icon:'🎚', label:'スライダー'},
-  {type:'file',   icon:'📎', label:'ファイル'},
-  {type:'agree',  icon:'✅', label:'同意'},
-  {type:'url',    icon:'🔗', label:'URL'},
+var FT=[
+  {t:'short', i:'✏️', l:'短文'},
+  {t:'long',  i:'📝', l:'長文'},
+  {t:'number',i:'🔢', l:'数字'},
+  {t:'email', i:'📧', l:'メール'},
+  {t:'tel',   i:'📞', l:'電話'},
+  {t:'date',  i:'📅', l:'日付'},
+  {t:'time',  i:'⏰', l:'時間'},
+  {t:'radio', i:'🔘', l:'ラジオ'},
+  {t:'checkbox',i:'☑️',l:'チェック'},
+  {t:'select',i:'▾',  l:'プルダウン'},
+  {t:'rating',i:'⭐', l:'評価'},
+  {t:'slider',i:'🎚', l:'スライダー'},
+  {t:'file',  i:'📎', l:'ファイル'},
+  {t:'agree', i:'✅', l:'同意'},
+  {t:'url',   i:'🔗', l:'URL'},
 ];
 
-function uid(){ return Math.random().toString(36).slice(2,10); }
+function uid(){return Math.random().toString(36).slice(2,9);}
+function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-function esc(s){
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ===== 初期化 =====
-(function init(){
-  var p = new URLSearchParams(location.search);
-  var editId = p.get('id');
-  var tmpl   = p.get('template');
-  if(editId)        loadForm(editId);
-  else if(tmpl)     loadTemplate(tmpl);
-  else              initDefault();
+// 初期化
+(function(){
+  var p=new URLSearchParams(location.search);
+  var id=p.get('id'), tmpl=p.get('template');
+  if(id) loadForm(id);
+  else if(tmpl) loadTmpl(tmpl);
+  else{ addQ('short','お名前',true); addQ('email','メールアドレス',true); }
 })();
-
-function initDefault(){
-  addQuestion('short', 'お名前', true);
-  addQuestion('email', 'メールアドレス', true);
-}
 
 async function loadForm(id){
   try{
-    var snap = await db.collection('forms').doc(id).get();
-    if(snap.exists){
-      var d = snap.data();
-      formId = id;
-      document.getElementById('formTitle').value = d.title||'';
-      document.getElementById('canvasTitle').value = d.title||'';
-      document.getElementById('canvasDesc').value = d.description||'';
-      questions = d.questions||[];
-      themeColor = d.themeColor||'#6C63FF';
+    var s=await db.collection('forms').doc(id).get();
+    if(s.exists){ var d=s.data(); formId=id;
+      document.getElementById('topTitle').value=d.title||'';
+      document.getElementById('cTitle').value=d.title||'';
+      document.getElementById('cDesc').value=d.description||'';
+      questions=d.questions||[]; theme=d.themeColor||'#6C63FF';
       renderAll();
     }
-  }catch(e){ console.error(e); }
+  }catch(ex){console.error(ex);}
 }
 
-function loadTemplate(tmpl){
-  var T = {
-    contact:{title:'お問い合わせ',desc:'お気軽にご連絡ください',questions:[
-      {id:uid(),type:'short',label:'お名前',required:true,options:[]},
-      {id:uid(),type:'email',label:'メールアドレス',required:true,options:[]},
-      {id:uid(),type:'long', label:'お問い合わせ内容',required:true,options:[]},
+function loadTmpl(t){
+  var T={
+    contact:{title:'お問い合わせ',desc:'お気軽にどうぞ',qs:[
+      {id:uid(),t:'short',l:'お名前',req:true,opts:[],ph:'',branches:{}},
+      {id:uid(),t:'email',l:'メールアドレス',req:true,opts:[],ph:'',branches:{}},
+      {id:uid(),t:'long', l:'お問い合わせ内容',req:true,opts:[],ph:'',branches:{}},
     ]},
-    attendance:{title:'出欠確認',desc:'出席・欠席をお知らせください',questions:[
-      {id:uid(),type:'short',label:'お名前',required:true,options:[]},
-      {id:uid(),type:'radio',label:'出欠',required:true,options:['出席','欠席','未定']},
-      {id:uid(),type:'long', label:'備考',required:false,options:[]},
+    event:{title:'イベント申込',desc:'定員に達し次第締め切ります',qs:[
+      {id:uid(),t:'short',l:'お名前',req:true,opts:[],ph:'',branches:{}},
+      {id:uid(),t:'email',l:'メールアドレス',req:true,opts:[],ph:'',branches:{}},
+      {id:uid(),t:'radio',l:'参加人数',req:true,opts:['1名','2名','3名以上'],ph:'',branches:{}},
+      {id:uid(),t:'agree',l:'参加規約に同意します',req:true,opts:[],ph:'',branches:{}},
     ]},
-    event:{title:'イベント申込',desc:'定員に達し次第締め切ります',questions:[
-      {id:uid(),type:'short',label:'お名前',required:true,options:[]},
-      {id:uid(),type:'email',label:'メールアドレス',required:true,options:[]},
-      {id:uid(),type:'radio',label:'参加人数',required:true,options:['1名','2名','3名以上']},
-      {id:uid(),type:'long', label:'ご要望など',required:false,options:[]},
-      {id:uid(),type:'agree',label:'参加規約に同意します',required:true,options:[]},
-    ]},
-    survey:{title:'満足度アンケート',desc:'ご意見をお聞かせください',questions:[
-      {id:uid(),type:'rating',  label:'総合満足度',required:true,options:[]},
-      {id:uid(),type:'radio',   label:'サービスを知ったきっかけ',required:false,options:['SNS','紹介','検索','広告']},
-      {id:uid(),type:'long',    label:'改善してほしい点',required:false,options:[]},
-      {id:uid(),type:'checkbox',label:'興味のあるサービス',required:false,options:['プランA','プランB','その他']},
-    ]},
-    vote:{title:'投票フォーム',desc:'1人1票！',questions:[
-      {id:uid(),type:'short',label:'お名前（任意）',required:false,options:[]},
-      {id:uid(),type:'radio',label:'投票先',required:true,options:['候補A','候補B','候補C']},
-      {id:uid(),type:'long', label:'コメント（任意）',required:false,options:[]},
+    survey:{title:'満足度アンケート',desc:'ご意見をお聞かせください',qs:[
+      {id:uid(),t:'rating',  l:'総合満足度',req:true,opts:[],ph:'',branches:{}},
+      {id:uid(),t:'radio',   l:'知ったきっかけ',req:false,opts:['SNS','紹介','検索','広告'],ph:'',branches:{}},
+      {id:uid(),t:'long',    l:'改善してほしい点',req:false,opts:[],ph:'',branches:{}},
     ]},
   };
-  var t = T[tmpl];
-  if(t){
-    document.getElementById('formTitle').value = t.title;
-    document.getElementById('canvasTitle').value = t.title;
-    document.getElementById('canvasDesc').value = t.desc;
-    questions = t.questions;
-    renderAll();
-  } else initDefault();
+  var tmpl=T[t]; if(!tmpl){addQ('short','お名前',true);addQ('email','メールアドレス',true);return;}
+  document.getElementById('topTitle').value=tmpl.title;
+  document.getElementById('cTitle').value=tmpl.title;
+  document.getElementById('cDesc').value=tmpl.desc;
+  questions=tmpl.qs; renderAll();
 }
 
-// ===== 質問追加・削除・移動 =====
-function addQuestion(type, label, required){
-  type = type||'short';
-  var info = FIELD_TYPES.find(function(f){return f.type===type;})||FIELD_TYPES[0];
-  var q = {
-    id: uid(), type: type,
-    label: label || info.label + 'の質問',
-    description: '', required: !!required,
-    options: ['radio','checkbox','select'].includes(type) ? ['選択肢1','選択肢2','選択肢3'] : [],
-    placeholder: '', branchEnabled: false,
-  };
-  questions.push(q);
-  renderAll();
-  setActiveQuestion(q.id);
+// ===== Q管理 =====
+function addQ(type,label,req){
+  type=type||'short';
+  var fi=FT.find(function(f){return f.t===type;})||FT[0];
+  var q={id:uid(),t:type,l:label||(fi.l+'の質問'),desc:'',req:!!req,opts:['radio','checkbox','select'].includes(type)?['選択肢1','選択肢2','選択肢3']:[],ph:'',branches:{}};
+  questions.push(q); renderAll(); setActive(q.id);
 }
-
-function removeQuestion(id){
-  questions = questions.filter(function(q){return q.id!==id;});
-  if(activeQid===id) activeQid = questions.length ? questions[questions.length-1].id : null;
+function removeQ(id){
+  questions=questions.filter(function(q){return q.id!==id;});
+  if(activeId===id) activeId=questions.length?questions[questions.length-1].id:null;
   renderAll();
 }
-
-function setActiveQuestion(id){
-  activeQid = id;
-  renderAll();
+function setActive(id){activeId=id; renderAll();}
+function dupQ(id){
+  var q=questions.find(function(x){return x.id===id;}); if(!q)return;
+  var nq=JSON.parse(JSON.stringify(q)); nq.id=uid();
+  questions.splice(questions.indexOf(q)+1,0,nq); renderAll(); setActive(nq.id);
+}
+function moveQ(id,d){
+  var i=questions.findIndex(function(x){return x.id===id;}), ni=i+d;
+  if(ni<0||ni>=questions.length)return;
+  var t=questions[i]; questions[i]=questions[ni]; questions[ni]=t; renderAll();
+}
+function updQ(id,k,v){
+  var q=questions.find(function(x){return x.id===id;}); if(q){q[k]=v; renderAll();}
+}
+function addOpt(id){
+  var q=questions.find(function(x){return x.id===id;}); if(q){q.opts.push('選択肢'+(q.opts.length+1)); renderAll();}
+}
+function editOpt(id,i){
+  var q=questions.find(function(x){return x.id===id;}); if(!q)return;
+  var v=prompt('選択肢を編集:',q.opts[i]); if(v!==null){q.opts[i]=v; renderAll();}
+}
+function removeOpt(id,i){
+  var q=questions.find(function(x){return x.id===id;}); if(!q)return;
+  q.opts.splice(i,1); renderAll();
+}
+// 条件分岐: branches = {optionValue: targetQid or 'end'}
+function setBranch(qid,optVal,targetId){
+  var q=questions.find(function(x){return x.id===qid;}); if(!q)return;
+  if(!q.branches) q.branches={};
+  q.branches[optVal]=targetId; renderAll();
 }
 
-function duplicateQuestion(id){
-  var q = questions.find(function(x){return x.id===id;});
-  if(!q) return;
-  var nq = JSON.parse(JSON.stringify(q));
-  nq.id = uid();
-  var idx = questions.indexOf(q);
-  questions.splice(idx+1,0,nq);
-  renderAll();
-  setActiveQuestion(nq.id);
-}
-
-function moveQuestion(id, dir){
-  var idx = questions.findIndex(function(x){return x.id===id;});
-  var ni = idx+dir;
-  if(ni<0||ni>=questions.length) return;
-  var tmp = questions[idx]; questions[idx]=questions[ni]; questions[ni]=tmp;
-  renderAll();
-}
-
-function updateQuestion(id, key, value){
-  var q = questions.find(function(x){return x.id===id;});
-  if(q){ q[key]=value; renderAll(); }
-}
-
-function addOption(id){
-  var q = questions.find(function(x){return x.id===id;});
-  if(q){ q.options.push('選択肢'+(q.options.length+1)); renderAll(); }
-}
-
-function editOption(id, idx){
-  var q = questions.find(function(x){return x.id===id;});
-  if(!q) return;
-  var v = prompt('選択肢を編集:', q.options[idx]);
-  if(v!==null){ q.options[idx]=v; renderAll(); }
-}
-
-// ===== レンダリング =====
+// ===== RENDER =====
 function renderAll(){
-  renderLeftList();
-  renderFieldGrid();
-  renderCanvas();
-  renderRightPanel();
+  renderLeft(); renderFGrid(); renderCanvas(); renderRight();
 }
 
-function renderLeftList(){
-  var html = '';
-  questions.forEach(function(q,i){
-    var info = FIELD_TYPES.find(function(f){return f.type===q.type;})||FIELD_TYPES[0];
-    var active = activeQid===q.id ? 'active' : '';
-    html += '<div class="question-item '+active+'" onclick="setActiveQuestion(\''+q.id+'\')">'
-      +'<span class="q-num">'+(i+1)+'</span>'
-      +'<div class="q-icon">'+info.icon+'</div>'
-      +'<div class="q-info">'
-        +'<div class="q-label">'+esc(q.label)+'</div>'
-        +'<div class="q-type">'+info.label+'</div>'
-      +'</div>'
-      +'<button class="q-del" onclick="event.stopPropagation();removeQuestion(\''+q.id+'\')" title="削除">✕</button>'
+function renderLeft(){
+  var html=''; questions.forEach(function(q,i){
+    var fi=FT.find(function(f){return f.t===q.t;})||FT[0];
+    html+='<div class="qi'+(activeId===q.id?' on':'')+'" onclick="setActive(\''+q.id+'\')">'
+      +'<span class="qi-num">'+(i+1)+'</span>'
+      +'<div class="qi-ico">'+fi.i+'</div>'
+      +'<div class="qi-info"><div class="qi-label">'+e(q.l)+'</div><div class="qi-type">'+fi.l+'</div></div>'
+      +'<button class="qi-del" onclick="event.stopPropagation();removeQ(\''+q.id+'\')">✕</button>'
     +'</div>';
   });
-  document.getElementById('questionsList').innerHTML = html;
+  document.getElementById('qlist').innerHTML=html;
 }
 
-function renderFieldGrid(){
-  var html = '';
-  FIELD_TYPES.forEach(function(f){
-    html += '<div class="field-type-btn" onclick="addQuestion(\''+f.type+'\')"><span class="ft-icon">'+f.icon+'</span>'+f.label+'</div>';
-  });
-  document.getElementById('fieldGrid').innerHTML = html;
+function renderFGrid(){
+  document.getElementById('fgrid').innerHTML=FT.map(function(f){
+    return '<div class="fb" onclick="addQ(\''+f.t+'\')"><span class="fi">'+f.i+'</span>'+f.l+'</div>';
+  }).join('');
 }
 
 function renderCanvas(){
-  document.getElementById('colorBar').style.background = themeColor;
-  var html = '';
-  questions.forEach(function(q,i){
-    var active = activeQid===q.id ? 'active' : '';
-    html += '<div class="question-card '+active+'" id="qc_'+q.id+'" onclick="setActiveQuestion(\''+q.id+'\')"><div class="card-num">Q'+(i+1)+(q.required?'  <span class="card-required">必須</span>':'')+'</div>'
-      +'<input class="card-q-input" value="'+esc(q.label)+'" placeholder="質問を入力..." oninput="updateQuestion(\''+q.id+'\',\'label\',this.value)" onclick="event.stopPropagation()">'
-      +'<textarea class="card-desc-input" placeholder="説明（任意）" rows="1" oninput="updateQuestion(\''+q.id+'\',\'description\',this.value)" onclick="event.stopPropagation()">'+esc(q.description||'')+'</textarea>'
-      +'<div>'+renderPreview(q)+'</div>'
-      +'<div class="card-actions">'
-        +'<button class="action-btn" onclick="event.stopPropagation();duplicateQuestion(\''+q.id+'\')">📋 複製</button>'
-        +'<button class="action-btn" onclick="event.stopPropagation();moveQuestion(\''+q.id+'\',-1)">↑</button>'
-        +'<button class="action-btn" onclick="event.stopPropagation();moveQuestion(\''+q.id+'\',1)">↓</button>'
-        +'<button class="action-btn del" onclick="event.stopPropagation();removeQuestion(\''+q.id+'\')">🗑 削除</button>'
+  document.getElementById('cbar').style.background=theme;
+  var html=''; questions.forEach(function(q,i){
+    var on=activeId===q.id;
+    var hasBranch=on&&['radio','checkbox','select'].includes(q.t)&&q.opts.length>0;
+    html+='<div class="qcard'+(on?' on':'')+'" id="qc_'+q.id+'" onclick="setActive(\''+q.id+'\')">'
+      +'<div class="qnum">Q'+(i+1)+(q.req?' <span class="req">必須</span>':'')+'</div>'
+      +'<input class="qinput" value="'+e(q.l)+'" placeholder="質問を入力..." oninput="updQ(\''+q.id+'\',\'l\',this.value)" onclick="event.stopPropagation()">'
+      +'<textarea class="qdesc" rows="1" placeholder="説明（任意）" oninput="updQ(\''+q.id+'\',\'desc\',this.value)" onclick="event.stopPropagation()">'+e(q.desc||'')+'</textarea>'
+      +'<div>'+renderPrev(q)+'</div>'
+      +(hasBranch?renderBranchBox(q):'')
+      +'<div class="cactions">'
+        +'<button class="cact" onclick="event.stopPropagation();dupQ(\''+q.id+'\')">📋 複製</button>'
+        +'<button class="cact" onclick="event.stopPropagation();moveQ(\''+q.id+'\',-1)">↑</button>'
+        +'<button class="cact" onclick="event.stopPropagation();moveQ(\''+q.id+'\',1)">↓</button>'
+        +'<button class="cact del" onclick="event.stopPropagation();removeQ(\''+q.id+'\')">🗑 削除</button>'
       +'</div>'
     +'</div>';
   });
-  document.getElementById('questionsCanvas').innerHTML = html;
+  document.getElementById('canvas').innerHTML=html;
 }
 
-function renderPreview(q){
-  var c = 'color:var(--muted)';
-  switch(q.type){
-    case 'short':  return '<input class="preview-input" placeholder="'+(q.placeholder||'短文回答')+'" style="'+c+'" disabled>';
-    case 'long':   return '<textarea class="preview-textarea" placeholder="'+(q.placeholder||'長文回答')+'" style="'+c+'" disabled></textarea>';
-    case 'number': return '<input class="preview-input" type="number" placeholder="0" style="'+c+'" disabled>';
-    case 'email':  return '<input class="preview-input" type="email" placeholder="example@email.com" style="'+c+'" disabled>';
-    case 'tel':    return '<input class="preview-input" type="tel" placeholder="090-0000-0000" style="'+c+'" disabled>';
-    case 'date':   return '<input class="preview-input" type="date" style="'+c+'" disabled>';
-    case 'time':   return '<input class="preview-input" type="time" style="'+c+'" disabled>';
-    case 'url':    return '<input class="preview-input" type="url" placeholder="https://" style="'+c+'" disabled>';
-    case 'select':
-      return '<select class="preview-input" disabled style="'+c+'"><option>選択してください</option>'
-        +(q.options||[]).map(function(o){return '<option>'+esc(o)+'</option>';}).join('')+'</select>';
-    case 'radio':
-    case 'checkbox': {
-      var shape = q.type==='radio' ? 'opt-circle' : 'opt-square';
-      var html = '<div class="preview-options">';
-      (q.options||[]).forEach(function(o,i){
-        html += '<div class="preview-option"><div class="'+shape+'"></div>'+esc(o);
-        if(activeQid===q.id) html += '<button class="btn-edit-opt" onclick="event.stopPropagation();editOption(\''+q.id+'\','+i+')">✏️</button>';
-        html += '</div>';
-      });
-      if(activeQid===q.id) html += '<button class="btn-add-opt" onclick="event.stopPropagation();addOption(\''+q.id+'\')">＋ 選択肢を追加</button>';
-      html += '</div>';
-      return html;
-    }
-    case 'rating': return '<div class="stars-preview">'+'<span class="star-p">★</span>'.repeat(5)+'</div>';
-    case 'slider': return '<input type="range" min="0" max="100" value="50" style="width:100%;accent-color:'+themeColor+'" disabled>';
-    case 'file':   return '<div style="border:2px dashed var(--bg2);border-radius:9px;padding:18px;text-align:center;color:var(--muted);font-size:0.82rem;">📎 ファイルをクリックして選択</div>';
-    case 'agree':  return '<label style="display:flex;align-items:center;gap:9px;font-size:0.88rem;color:var(--text)"><input type="checkbox" disabled style="accent-color:'+themeColor+';width:15px;height:15px;">'+esc(q.label)+'</label>';
-    default:       return '<input class="preview-input" placeholder="回答" style="'+c+'" disabled>';
-  }
-}
-
-function renderRightPanel(){
-  var props = document.getElementById('questionProps');
-  var q = questions.find(function(x){return x.id===activeQid;});
-  if(!q){
-    props.innerHTML = '<p style="font-size:0.83rem;color:var(--muted);line-height:1.7;">質問をクリックして設定を編集</p>';
-    return;
-  }
-  var opts = FIELD_TYPES.map(function(f){
-    return '<option value="'+f.type+'"'+(q.type===f.type?' selected':'')+'>'+f.icon+' '+f.label+'</option>';
-  }).join('');
-  props.innerHTML =
-    '<div class="prop-row"><label class="prop-label">タイプ</label>'
-    +'<select class="prop-select" onchange="changeType(\''+q.id+'\',this.value)">'+opts+'</select></div>'
-    +'<div class="prop-row" style="display:flex;align-items:center;justify-content:space-between;">'
-      +'<label class="prop-label" style="margin:0;">必須</label>'
-      +'<button class="toggle-btn'+(q.required?' on':'')+'" onclick="updateQuestion(\''+q.id+'\',\'required\','+(!q.required)+');this.classList.toggle(\'on\')"></button>'
-    +'</div>'
-    +'<div class="prop-row"><label class="prop-label">プレースホルダー</label>'
-    +'<input class="prop-input" value="'+esc(q.placeholder||'')+'" placeholder="回答例..." oninput="updateQuestion(\''+q.id+'\',\'placeholder\',this.value)"></div>'
-    +(q.branchEnabled && ['radio','select'].includes(q.type) ? renderBranchUI(q) : '')
-    +'<div class="prop-row" style="display:flex;align-items:center;justify-content:space-between;">'
-      +'<label class="prop-label" style="margin:0;">条件分岐</label>'
-      +'<button class="toggle-btn'+(q.branchEnabled?' on':'')+'" onclick="updateQuestion(\''+q.id+'\',\'branchEnabled\','+(!q.branchEnabled)+');renderAll()"></button>'
-    +'</div>';
-}
-
-function renderBranchUI(q){
-  var html = '<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;">'
-    +'<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px;">回答で次の質問を変える</div>';
-  (q.options||[]).forEach(function(opt){
-    html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;">'
-      +'<span style="flex:1;font-size:0.75rem;">'+esc(opt)+'</span>'
-      +'<span style="color:var(--purple);font-size:0.7rem;font-weight:700;">→</span>'
-      +'<select style="font-size:0.73rem;border:1.5px solid var(--border);border-radius:5px;padding:3px 5px;background:var(--white);font-family:Inter,sans-serif;">'
-        +'<option>次の質問</option>'
-        +questions.filter(function(x){return x.id!==q.id;}).map(function(x){return '<option>'+esc(x.label.slice(0,18))+'</option>';}).join('')
-        +'<option>送信</option>'
+function renderBranchBox(q){
+  var nextQs=questions.filter(function(x){return x.id!==q.id;});
+  var html='<div class="branch-box">'
+    +'<div class="branch-title">🔀 条件分岐 — 選択肢によって次の質問を変える</div>';
+  q.opts.forEach(function(opt){
+    var cur=(q.branches&&q.branches[opt])||'';
+    html+='<div class="brow">'
+      +'<span class="b-opt">'+e(opt)+'</span>'
+      +'<span class="b-arrow">→ 次:</span>'
+      +'<select class="b-sel" onchange="setBranch(\''+q.id+'\',\''+e(opt)+'\',this.value)" onclick="event.stopPropagation()">'
+        +'<option value="">次の質問（順番通り）</option>'
+        +nextQs.map(function(x){return '<option value="'+x.id+'"'+(cur===x.id?' selected':'')+'>'+e(x.l.slice(0,22))+'</option>';}).join('')
+        +'<option value="end"'+(cur==='end'?' selected':'')+'>→ 送信画面へ</option>'
       +'</select>'
     +'</div>';
   });
-  return html + '</div>';
+  html+='</div>';
+  return html;
 }
 
-function changeType(id, type){
-  var q = questions.find(function(x){return x.id===id;});
-  if(!q) return;
-  q.type = type;
-  if(['radio','checkbox','select'].includes(type) && !q.options.length) q.options = ['選択肢1','選択肢2'];
-  else if(!['radio','checkbox','select'].includes(type)) q.options = [];
+function renderPrev(q){
+  var c='color:var(--muted)';
+  switch(q.t){
+    case 'short':  return '<input class="pinput" placeholder="'+(q.ph||'短文回答')+'" style="'+c+'" disabled>';
+    case 'long':   return '<textarea class="ptextarea" placeholder="'+(q.ph||'長文回答')+'" style="'+c+'" disabled></textarea>';
+    case 'number': return '<input class="pinput" type="number" placeholder="0" style="'+c+'" disabled>';
+    case 'email':  return '<input class="pinput" type="email" placeholder="example@email.com" style="'+c+'" disabled>';
+    case 'tel':    return '<input class="pinput" type="tel" placeholder="090-0000-0000" style="'+c+'" disabled>';
+    case 'date':   return '<input class="pinput" type="date" style="'+c+'" disabled>';
+    case 'time':   return '<input class="pinput" type="time" style="'+c+'" disabled>';
+    case 'url':    return '<input class="pinput" type="url" placeholder="https://" style="'+c+'" disabled>';
+    case 'select': return '<select class="pinput" disabled style="'+c+'"><option>選択してください</option>'+(q.opts||[]).map(function(o){return '<option>'+e(o)+'</option>';}).join('')+'</select>';
+    case 'radio':
+    case 'checkbox':{
+      var sh=q.t==='radio'?'ocircle':'osquare';
+      var html='<div class="popts">';
+      (q.opts||[]).forEach(function(o,i){
+        html+='<div class="popt"><div class="'+sh+'"></div>'+e(o);
+        if(activeId===q.id) html+='<button class="btn-eopt" onclick="event.stopPropagation();editOpt(\''+q.id+'\','+i+')">✏️</button>'
+          +'<button class="btn-eopt" style="background:rgba(255,101,132,0.1);color:var(--coral)" onclick="event.stopPropagation();removeOpt(\''+q.id+'\','+i+')">✕</button>';
+        html+='</div>';
+      });
+      if(activeId===q.id) html+='<button class="btn-aopt" onclick="event.stopPropagation();addOpt(\''+q.id+'\')">＋ 選択肢を追加</button>';
+      html+='</div>'; return html;
+    }
+    case 'rating': return '<div class="pstars">★★★★★</div>';
+    case 'slider': return '<input type="range" min="0" max="100" value="50" style="width:100%;accent-color:'+theme+'" disabled>';
+    case 'file':   return '<div style="border:2px dashed var(--bg2);border-radius:8px;padding:14px;text-align:center;color:var(--muted);font-size:0.8rem;">📎 ファイルを選択</div>';
+    case 'agree':  return '<label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text)"><input type="checkbox" disabled style="accent-color:'+theme+';width:14px;height:14px;">'+e(q.l)+'</label>';
+    default: return '<input class="pinput" placeholder="回答" style="'+c+'" disabled>';
+  }
+}
+
+function renderRight(){
+  var props=document.getElementById('rprops');
+  var q=questions.find(function(x){return x.id===activeId;});
+  if(!q){props.innerHTML='<p style="font-size:0.8rem;color:var(--muted);line-height:1.7;">質問をクリックして設定を編集</p>';return;}
+  var opts=FT.map(function(f){return '<option value="'+f.t+'"'+(q.t===f.t?' selected':'')+'>'+f.i+' '+f.l+'</option>';}).join('');
+  props.innerHTML=
+    '<div class="prow"><label class="plbl">タイプ</label>'
+    +'<select class="psel" onchange="changeType(\''+q.id+'\',this.value)">'+opts+'</select></div>'
+    +'<div class="req-row"><label class="plbl" style="margin:0">必須</label>'
+    +'<button class="tog'+(q.req?' on':'')+'" onclick="updQ(\''+q.id+'\',\'req\',!'+q.req+');this.classList.toggle(\'on\')"></button></div>'
+    +'<div class="prow"><label class="plbl">プレースホルダー</label>'
+    +'<input class="pinp" value="'+e(q.ph||'')+'" placeholder="回答例..." oninput="updQ(\''+q.id+'\',\'ph\',this.value)"></div>';
+}
+
+function changeType(id,t){
+  var q=questions.find(function(x){return x.id===id;}); if(!q)return;
+  q.t=t;
+  if(['radio','checkbox','select'].includes(t)&&!q.opts.length) q.opts=['選択肢1','選択肢2'];
+  else if(!['radio','checkbox','select'].includes(t)) q.opts=[];
+  q.branches={};
   renderAll();
 }
 
-// ===== UI操作 =====
-function switchTab(tab, el){
-  document.querySelectorAll('.panel-tab').forEach(function(t){t.classList.remove('active');});
-  el.classList.add('active');
-  document.getElementById('tabQuestions').style.display = tab==='questions' ? 'block' : 'none';
-  document.getElementById('tabSettings').style.display  = tab==='settings'  ? 'block' : 'none';
+// ===== UI =====
+function switchTab(t,el){
+  document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});
+  el.classList.add('on');
+  document.getElementById('tabQ').classList.toggle('hide',t!=='q');
+  document.getElementById('tabS').classList.toggle('hide',t!=='s');
 }
-
-function toggleSetting(btn, inputId){
+function togSet(btn,iid){
   btn.classList.toggle('on');
-  var inp = document.getElementById(inputId);
-  inp.style.display = btn.classList.contains('on') ? 'block' : 'none';
+  document.getElementById(iid).style.display=btn.classList.contains('on')?'block':'none';
 }
-
 function setTheme(el){
-  document.querySelectorAll('.theme-dot').forEach(function(d){d.classList.remove('active');});
-  el.classList.add('active');
-  themeColor = el.dataset.color;
-  document.documentElement.style.setProperty('--purple', themeColor);
+  document.querySelectorAll('.dot').forEach(function(d){d.classList.remove('active');});
+  el.classList.add('active'); theme=el.dataset.c;
+  document.documentElement.style.setProperty('--p',theme);
   renderCanvas();
 }
-
 function previewForm(){
-  var data = {
-    title: document.getElementById('canvasTitle').value,
-    description: document.getElementById('canvasDesc').value,
-    questions: questions,
-    themeColor: themeColor
-  };
-  localStorage.setItem('preview_form', JSON.stringify(data));
+  localStorage.setItem('preview_form',JSON.stringify({
+    title:document.getElementById('cTitle').value,
+    description:document.getElementById('cDesc').value,
+    questions:questions, themeColor:theme
+  }));
   window.open('form.html?preview=local','_blank');
 }
-
 async function saveForm(){
-  if(!currentUser){
-    showToast('⚠️ 保存にはログインが必要です');
-    setTimeout(function(){location.href='index.html';}, 1500);
-    return;
-  }
+  if(!currentUser){showToast('⚠️ ログインが必要です'); setTimeout(function(){location.href='index.html';},1400);return;}
   showToast('💾 保存中...');
-  var data = {
-    title: document.getElementById('canvasTitle').value,
-    description: document.getElementById('canvasDesc').value,
-    questions: questions,
-    themeColor: themeColor,
-    userId: currentUser.uid,
-    createdAt: new Date().toISOString(),
-    responseCount: 0,
-    settings: {
-      deadline: document.getElementById('deadlineInput').value||null,
-      capacity: document.getElementById('capacityInput').value||null,
-      password: document.getElementById('passwordInput').value||null,
-      oneResponse: document.getElementById('tgOne').classList.contains('on'),
+  var data={
+    title:document.getElementById('cTitle').value,
+    description:document.getElementById('cDesc').value,
+    questions:questions, themeColor:theme,
+    userId:currentUser.uid, createdAt:new Date().toISOString(), responseCount:0,
+    settings:{
+      deadline:document.getElementById('iD').value||null,
+      capacity:document.getElementById('iC').value||null,
+      password:document.getElementById('iP').value||null,
+      oneResponse:document.getElementById('tgO').classList.contains('on'),
     }
   };
   try{
-    if(formId){
-      await db.collection('forms').doc(formId).set(data, {merge:true});
-    } else {
-      var ref = await db.collection('forms').add(data);
-      formId = ref.id;
-      history.replaceState(null,'','?id='+formId);
-    }
-    showToast('✅ 公開しました！URLをコピーして共有できます');
-  }catch(e){ showToast('❌ エラー: '+e.message); }
+    if(formId) await db.collection('forms').doc(formId).set(data,{merge:true});
+    else{ var ref=await db.collection('forms').add(data); formId=ref.id; history.replaceState(null,'','?id='+formId); }
+    showPubModal(formId);
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
 }
 
+// 公開モーダル
+function showPubModal(fid){
+  var url=location.origin+location.pathname.replace('builder.html','')+'form.html?id='+fid;
+  document.getElementById('pubUrl').textContent=url;
+  document.getElementById('pubLink').href=url;
+  var canvas=document.getElementById('qrCanvas');
+  QRCode.toCanvas(canvas,url,{width:160,margin:2,color:{dark:'#1A1A2E',light:'#F8F9FF'}},function(){});
+  document.getElementById('pubModal').classList.add('open');
+}
+function closePub(){document.getElementById('pubModal').classList.remove('open');}
+function copyUrl(){
+  navigator.clipboard.writeText(document.getElementById('pubUrl').textContent);
+  showToast('✅ URLをコピーしました');
+}
+function dlQr(){
+  var a=document.createElement('a'); a.download='formly-qr.png';
+  a.href=document.getElementById('qrCanvas').toDataURL(); a.click();
+}
+document.getElementById('pubModal').addEventListener('click',function(e){if(e.target===this)closePub();});
+
 function showToast(msg){
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');}, 3200);
+  var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2800);
 }
 </script>
 </body>
