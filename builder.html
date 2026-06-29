@@ -259,7 +259,7 @@ var qrObj=null; // QRCode instance
 auth.onAuthStateChanged(function(u){currentUser=u;});
 
 var FT=[
-  {t:'short',i:'✏️',l:'短文'},{t:'long',i:'📝',l:'長文'},{t:'number',i:'🔢',l:'数字'},
+  {t:'section',i:'📌',l:'セクション'},{t:'short',i:'✏️',l:'短文'},{t:'long',i:'📝',l:'長文'},{t:'number',i:'🔢',l:'数字'},
   {t:'email',i:'📧',l:'メール'},{t:'tel',i:'📞',l:'電話'},{t:'date',i:'📅',l:'日付'},
   {t:'time',i:'⏰',l:'時間'},{t:'radio',i:'🔘',l:'ラジオ'},{t:'checkbox',i:'☑️',l:'チェック'},
   {t:'select',i:'▾',l:'プルダウン'},{t:'rating',i:'⭐',l:'評価'},{t:'slider',i:'🎚',l:'スライダー'},
@@ -353,7 +353,7 @@ function loadTmpl(t){
 function addQ(type,label,req){
   type=type||'short';
   var fi=FT.find(function(f){return f.t===type;})||FT[0];
-  var q={id:uid(),t:type,l:label||(fi.l+'の質問'),desc:'',req:!!req,
+  var q={id:uid(),t:type,l:label||(type==='section'?'セクション名':fi.l+'の質問'),desc:'',req:type==='section'?false:!!req,color:type==='section'?'#6C63FF':undefined,
     opts:['radio','checkbox','select'].includes(type)?['選択肢1','選択肢2','選択肢3']:[],
     ph:'',branches:{},nextQ:''};
   questions.push(q); renderAll(); setActive(q.id);
@@ -397,9 +397,11 @@ function setNextQ(qid,targetId){
 function changeType(id,t){
   var q=questions.find(function(x){return x.id===id;});if(!q)return;
   q.t=t;
-  if(['radio','checkbox','select'].includes(t)&&!q.opts.length)q.opts=['選択肢1','選択肢2'];
+  if(t==='section'){q.opts=[];q.req=false;q.branches={};}
+  else if(['radio','checkbox','select'].includes(t)&&!q.opts.length)q.opts=['選択肢1','選択肢2'];
   else if(!['radio','checkbox','select'].includes(t))q.opts=[];
-  q.branches={};renderAll();
+  if(t!=='section')q.branches={};
+  renderAll();
 }
 
 // ===== render =====
@@ -431,7 +433,7 @@ function renderCanvas(){
       +'<input class="qinput" value="'+e(q.l)+'" placeholder="質問を入力..." oninput="updQ(\''+q.id+'\',\'l\',this.value)" onclick="event.stopPropagation()">'
       +'<textarea class="qdesc" rows="1" placeholder="説明（任意）" oninput="updQ(\''+q.id+'\',\'desc\',this.value)" onclick="event.stopPropagation()">'+e(q.desc||'')+'</textarea>'
       +'<div>'+renderPrev(q,on)+'</div>'
-      +(on?renderNextBox(q):'')
+      +(on&&q.t!=='section'?renderNextBox(q):'')+(on&&q.t==='section'?renderSectionNext(q):'')
       +'<div class="cacts">'
         +'<button class="ca" onclick="event.stopPropagation();dupQ(\''+q.id+'\')">📋 複製</button>'
         +'<button class="ca" onclick="event.stopPropagation();moveQ(\''+q.id+'\',-1)">↑</button>'
@@ -475,6 +477,19 @@ function renderNextBox(q){
   }
   return html+'</div>';
 }
+function renderSectionNext(q){
+  var others=questions.filter(function(x){return x.id!==q.id;});
+  var cur=q.nextQ||'';
+  return '<div class="next-box">'
+    +'<div class="next-title">📌 このセクション後に進む質問</div>'
+    +'<div class="nrow"><span class="n-lbl" style="background:rgba(108,99,255,.05);color:var(--muted);">完了後</span><span class="n-arrow">→</span>'
+    +'<select class="n-sel" onchange="setNextQ(''+q.id+'',this.value)" onclick="event.stopPropagation()">'
+      +'<option value="">次の質問（順番通り）</option>'
+      +others.map(function(x){return '<option value="'+x.id+'"'+(cur===x.id?' selected':'')+'>'+e(x.l.slice(0,22))+'</option>';}).join('')
+      +'<option value="end"'+(cur==='end'?' selected':'')+'>→ 送信画面へ</option>'
+    +'</select></div>'
+  +'</div>';
+}
 function renderPrev(q,on){
   var c='color:var(--muted)';
   switch(q.t){
@@ -504,6 +519,7 @@ function renderPrev(q,on){
     case 'slider': return '<input type="range" min="0" max="100" value="50" style="width:100%;accent-color:'+theme+'" disabled>';
     case 'file':   return '<div style="border:2px dashed var(--bg2);border-radius:8px;padding:12px;text-align:center;color:var(--muted);font-size:.78rem;">📎 ファイルを選択</div>';
     case 'agree':  return '<label style="display:flex;align-items:center;gap:7px;font-size:.83rem;color:var(--text)"><input type="checkbox" disabled style="accent-color:'+theme+';width:13px;height:13px;">'+e(q.l)+'</label>';
+    case 'section': return '<div style="border-left:4px solid '+(q.color||theme)+';padding:8px 12px;background:rgba(108,99,255,.04);border-radius:0 6px 6px 0"><div style="font-size:.85rem;font-weight:700;color:var(--dark)">'+e(q.l||'セクション')+'</div>'+(q.desc?'<div style="font-size:.73rem;color:var(--muted);margin-top:2px">'+e(q.desc)+'</div>':'')+'</div>';
     default: return '<input class="pinput" placeholder="回答" style="'+c+'" disabled>';
   }
 }
