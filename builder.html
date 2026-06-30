@@ -188,9 +188,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 .toast{position:fixed;bottom:16px;right:16px;z-index:999;background:var(--dark);color:#fff;border-radius:8px;padding:10px 16px;font-size:.8rem;font-weight:500;opacity:0;pointer-events:none;transition:opacity .25s;box-shadow:0 5px 20px rgba(0,0,0,.22);}
 .toast.show{opacity:1;}
 
-/* フィールド追加メニューのドロップダウン閉じるオーバーレイ */
-.menu-bg{display:none;position:fixed;inset:0;z-index:40;}
-.menu-bg.open{display:block;}
+/* 質問追加エリア（アクティブセクション：常時表示グリッド） */
+.add-q-panel{background:rgba(108,99,255,.03);border:1.5px solid rgba(108,99,255,.12);border-radius:10px;padding:10px 12px;margin-top:6px;}
+.add-q-label{font-size:.65rem;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.add-q-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;}
+.aqb{background:var(--white);border:1.5px solid var(--border);border-radius:7px;padding:7px 3px 5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:'Inter',sans-serif;transition:all .12s;}
+.aqb:hover{border-color:var(--p);background:rgba(108,99,255,.06);}
+.aqb-icon{font-size:1rem;line-height:1;}
+.aqb-lbl{font-size:.58rem;font-weight:600;color:var(--muted);text-align:center;line-height:1.2;}
+.aqb:hover .aqb-lbl{color:var(--p);}
+/* 非アクティブセクションの折りたたみ追加ボタン */
+.btn-add-q-collapsed{width:100%;background:transparent;border:1.5px dashed rgba(108,99,255,.15);border-radius:8px;padding:7px;cursor:pointer;font-size:.73rem;font-weight:600;color:var(--muted);font-family:'Inter',sans-serif;margin-top:6px;transition:all .15s;}
+.btn-add-q-collapsed:hover{border-color:var(--p);color:var(--p);}
+/* 既存メニュー（残存する場合のフォールバック） */
 </style>
 </head>
 <body>
@@ -343,7 +353,7 @@ function makeQ(type,label,req){
   var fi=FT.find(function(f){return f.t===type;})||FT[0];
   return{id:uid(),t:type,l:label||(fi.l+'の質問'),desc:'',req:!!req,
     opts:['radio','checkbox','select'].includes(type)?['選択肢1','選択肢2','選択肢3']:[],
-    ph:'',twoCol:false,colLabel:'',branches:{}};
+    ph:'',twoCol:false,colLabel:'',branches:{},nextQ:''};
 }
 
 async function loadForm(id){
@@ -363,7 +373,7 @@ async function loadForm(id){
         return{id:q.id||uid(),t:q.t||q.type||'short',l:q.l||q.label||'質問',
           desc:q.desc||q.description||'',req:!!(q.req||q.required),
           opts:q.opts||q.options||[],ph:q.ph||q.placeholder||'',
-          twoCol:false,colLabel:'',branches:q.branches||{}};
+          twoCol:false,colLabel:'',branches:q.branches||{},nextQ:q.nextQ||''};
       });
       sections=[s];
     }
@@ -451,6 +461,16 @@ function editOpt(sid,qid,i){
     q.opts[i]=v;renderAll();
   }
 }
+function editOptInline(sid,qid,i,newVal){
+  // インライン編集：データだけ更新（再レンダリングしない）
+  var s=sections.find(function(x){return x.id===sid;});if(!s)return;
+  var q=s.questions.find(function(x){return x.id===qid;});if(!q)return;
+  var old=q.opts[i];
+  if(q.branches&&q.branches[old]!==undefined){q.branches[newVal]=q.branches[old];delete q.branches[old];}
+  q.opts[i]=newVal;
+  // 左パネルのツリーだけ更新（フォーカスを失わないように）
+  renderTree();
+}
 function removeOpt(sid,qid,i){
   var s=sections.find(function(x){return x.id===sid;});if(!s)return;
   var q=s.questions.find(function(x){return x.id===qid;});if(!q)return;
@@ -471,6 +491,11 @@ function setBranch(sid,qid,optIdx,targetQid){
   var optVal=q.opts[optIdx];if(optVal===undefined)return;
   if(targetQid==='')delete q.branches[optVal];
   else q.branches[optVal]=targetQid;
+}
+function setNextQ(sid,qid,targetQid){
+  var s=sections.find(function(x){return x.id===sid;});if(!s)return;
+  var q=s.questions.find(function(x){return x.id===qid;});if(!q)return;
+  q.nextQ=targetQid;
 }
 
 function closeAllMenus(){
@@ -536,15 +561,18 @@ function renderCanvas(){
       // セクション本体
       +'<div class="sec-body">'
         +renderSectionQuestions(s)
-        // 質問追加ボタン
-        +'<div class="btn-add-q-wrap" id="addmenu_'+s.id+'">'
-          +'<button class="btn-add-q-in" onclick="event.stopPropagation();openAddMenu(\''+s.id+'\')">'
-            +'<span>＋</span><span>質問を追加</span>'
-          +'</button>'
-          +'<div class="add-type-menu">'
-            +FT.map(function(f){return '<button class="atm-btn" onclick="addQToSection(\''+s.id+'\',\''+f.t+'\')" title="'+f.l+'"><span class="atm-icon">'+f.i+'</span>'+f.l+'</button>';}).join('')
-          +'</div>'
-        +'</div>'
+        // 質問追加エリア：アクティブセクションは常時グリッド表示
+        +(isActiveSec
+          ? '<div class="add-q-panel" onclick="event.stopPropagation()">'
+              +'<div class="add-q-label">＋ フィールドを追加</div>'
+              +'<div class="add-q-grid">'
+                +FT.map(function(f){return '<button class="aqb" onclick="addQToSection(\''+s.id+'\',\''+f.t+'\')" title="'+f.l+'"><span class="aqb-icon">'+f.i+'</span><span class="aqb-lbl">'+f.l+'</span></button>';}).join('')
+              +'</div>'
+            +'</div>'
+          : '<button class="btn-add-q-collapsed" onclick="event.stopPropagation();setActiveSection(\''+s.id+'\')">'
+              +'＋ 質問を追加'
+            +'</button>'
+        )
         // 次のセクションへ
         +(sections.length>1?renderSecNext(s,si):'')
       +'</div>'
@@ -566,8 +594,8 @@ function renderSectionQuestions(s){
       +'<input class="qinput" value="'+esc(q.l)+'" placeholder="質問を入力..." oninput="updQ(\''+s.id+'\',\''+q.id+'\',\'l\',this.value)" onclick="event.stopPropagation()">'
       +'<textarea class="qdesc-in" rows="1" placeholder="説明（任意）" oninput="updQ(\''+s.id+'\',\''+q.id+'\',\'desc\',this.value)" onclick="event.stopPropagation()">'+esc(q.desc||'')+'</textarea>'
       +'<div>'+renderPrev(s.id,q,isActive)+'</div>'
-      // セクション内条件分岐（選択系のみ、アクティブ時）
-      +(isActive&&hasChoice?renderBranchUI(s,q):'')
+      // アクティブ時: 全質問にフローUI（条件分岐 + 次の質問）を表示
+      +(isActive?renderFlowUI(s,q):'')
       // アクションボタン
       +'<div class="qacts">'
         +'<button class="qa" onclick="event.stopPropagation();moveQ(\''+s.id+'\',\''+q.id+'\',-1)" title="上へ">↑</button>'
@@ -579,24 +607,67 @@ function renderSectionQuestions(s){
   return html;
 }
 
-function renderBranchUI(s,q){
-  // セクション内の他の質問リスト
-  var others=s.questions.filter(function(x){return x.id!==q.id;});
-  if(!others.length)return '';
-  var html='<div class="branch-ui"><div class="branch-title">🔀 選択肢で質問を表示/非表示</div>';
-  q.opts.forEach(function(opt,oi){
-    var cur=(q.branches&&q.branches[opt])||'';
+function renderFlowUI(s,q){
+  // このセクション内で、この質問より後の質問リスト（+ 特殊オプション）
+  var qi=s.questions.findIndex(function(x){return x.id===q.id;});
+  var after=s.questions.filter(function(x,i){return i>qi;}); // 後続質問
+  var all=s.questions.filter(function(x){return x.id!==q.id;}); // 全他質問
+  var hasChoice=['radio','checkbox','select'].includes(q.t)&&q.opts&&q.opts.length>0;
+  var html='<div class="branch-ui">';
+
+  // 1) 選択肢系: 選択肢ごとの条件分岐
+  if(hasChoice){
+    html+='<div class="branch-title">🔀 選択肢ごとに次の質問を設定</div>';
+    q.opts.forEach(function(opt,oi){
+      var cur=(q.branches&&q.branches[opt])||'';
+      html+='<div class="brow">'
+        +'<span class="b-opt" title="'+esc(opt)+'">'+esc(opt.length>10?opt.slice(0,10)+'…':opt)+'</span>'
+        +'<span class="b-arr">→</span>'
+        +'<select class="b-sel" onclick="event.stopPropagation()" onchange="setBranch(\''+s.id+'\',\''+q.id+'\','+oi+',this.value)">'
+          +'<option value="">次の質問（順番通り）</option>'
+          +all.map(function(x,i){
+            var idx=s.questions.indexOf(x)+1;
+            return '<option value="'+x.id+'"'+(cur===x.id?' selected':'')+'>Q'+idx+'. '+esc(x.l.slice(0,18))+'</option>';
+          }).join('')
+          +'<option value="skip_section"'+(cur==='skip_section'?' selected':'')+'>⏭ セクション終了</option>'
+          +'<option value="end"'+(cur==='end'?' selected':'')+'>✅ 送信画面へ</option>'
+        +'</select>'
+      +'</div>';
+    });
+    // デフォルト（どの選択肢にも一致しない場合）のnextQ
+    if(after.length){
+      html+='<div class="brow" style="border-top:1px solid rgba(108,99,255,.12);margin-top:5px;padding-top:5px;">'
+        +'<span class="b-opt" style="background:rgba(108,99,255,.04);color:var(--muted);">その他</span>'
+        +'<span class="b-arr">→</span>'
+        +'<select class="b-sel" onclick="event.stopPropagation()" onchange="setNextQ(\''+s.id+'\',\''+q.id+'\',this.value)">'
+          +'<option value="">次の質問（順番通り）</option>'
+          +all.map(function(x){
+            var idx=s.questions.indexOf(x)+1;
+            return '<option value="'+x.id+'"'+((q.nextQ||'')==x.id?' selected':'')+'>Q'+idx+'. '+esc(x.l.slice(0,18))+'</option>';
+          }).join('')
+          +'<option value="skip_section"'+((q.nextQ||'')==='skip_section'?' selected':'')+'>⏭ セクション終了</option>'
+          +'<option value="end"'+((q.nextQ||'')==='end'?' selected':'')+'>✅ 送信画面へ</option>'
+        +'</select>'
+      +'</div>';
+    }
+  } else {
+    // 2) 通常質問: 「回答後に進む質問」を設定
+    if(!all.length){return '';} // 他に質問がなければ表示しない
+    html+='<div class="branch-title">➡️ 回答後に進む質問</div>';
     html+='<div class="brow">'
-      +'<span class="b-opt" title="'+esc(opt)+'">'+esc(opt.length>10?opt.slice(0,10)+'…':opt)+'</span>'
-      +'<span class="b-arr">→ 次:</span>'
-      +'<select class="b-sel" onclick="event.stopPropagation()" onchange="setBranch(\''+s.id+'\',\''+q.id+'\','+oi+',this.value)">'
-        +'<option value="">次の質問（通常通り）</option>'
-        +others.map(function(x){return '<option value="'+x.id+'"'+(cur===x.id?' selected':'')+'>'+esc(x.l.slice(0,20))+'</option>';}).join('')
-        +'<option value="skip_section"'+(cur==='skip_section'?' selected':'')+'>⏭ このセクションをスキップ</option>'
-        +'<option value="end"'+(cur==='end'?' selected':'')+'>→ 送信画面へ</option>'
+      +'<span class="b-opt" style="background:rgba(108,99,255,.04);color:var(--muted);">回答後</span>'
+      +'<span class="b-arr">→</span>'
+      +'<select class="b-sel" onclick="event.stopPropagation()" onchange="setNextQ(\''+s.id+'\',\''+q.id+'\',this.value)">'
+        +'<option value="">次の質問（順番通り）</option>'
+        +all.map(function(x){
+          var idx=s.questions.indexOf(x)+1;
+          return '<option value="'+x.id+'"'+((q.nextQ||'')==x.id?' selected':'')+'>Q'+idx+'. '+esc(x.l.slice(0,18))+'</option>';
+        }).join('')
+        +'<option value="skip_section"'+((q.nextQ||'')==='skip_section'?' selected':'')+'>⏭ セクション終了</option>'
+        +'<option value="end"'+((q.nextQ||'')==='end'?' selected':'')+'>✅ 送信画面へ</option>'
       +'</select>'
     +'</div>';
-  });
+  }
   return html+'</div>';
 }
 
@@ -631,20 +702,31 @@ function renderPrev(sid,q,isActive){
     case 'date':  return '<input class="pinput" type="date" style="'+c+'" disabled>';
     case 'time':  return '<input class="pinput" type="time" style="'+c+'" disabled>';
     case 'url':   return '<input class="pinput" type="url" placeholder="https://" style="'+c+'" disabled>';
-    case 'select':return '<select class="pinput" disabled style="'+c+'"><option>選択してください</option>'+(q.opts||[]).map(function(o){return '<option>'+esc(o)+'</option>';}).join('')+'</select>';
+    case 'select':
     case 'radio':
     case 'checkbox':{
-      var sh=q.t==='radio'?'ocircle':'osquare';
+      var sh=q.t==='radio'?'ocircle':(q.t==='checkbox'?'osquare':'');
+      var isSelect=q.t==='select';
       var html='<div class="popts">';
       (q.opts||[]).forEach(function(o,i){
-        html+='<div class="popt"><div class="'+sh+'"></div>'+esc(o);
+        html+='<div class="popt">';
+        if(isSelect){
+          html+='<span style="font-size:.7rem;color:var(--muted);min-width:14px;">'+String.fromCharCode(9650)+'</span>';
+        } else {
+          html+='<div class="'+sh+'"></div>';
+        }
         if(isActive){
-          html+='<button class="btn-eopt" onclick="event.stopPropagation();editOpt(\''+sid+'\',\''+q.id+'\','+i+')">✏️</button>'
-            +'<button class="btn-xopt" onclick="event.stopPropagation();removeOpt(\''+sid+'\',\''+q.id+'\','+i+')">✕</button>';
+          // インライン編集可能なテキスト入力
+          html+='<input style="flex:1;border:none;outline:none;background:transparent;font-size:.8rem;color:var(--text);font-family:Inter,sans-serif;" value="'+esc(o)+'" onclick="event.stopPropagation()" oninput="editOptInline(\''+sid+'\',\''+q.id+'\','+i+',this.value)">';
+          html+='<button class="btn-xopt" onclick="event.stopPropagation();removeOpt(\''+sid+'\',\''+q.id+'\','+i+')" title="削除">✕</button>';
+        } else {
+          html+=esc(o);
         }
         html+='</div>';
       });
-      if(isActive)html+='<button class="btn-aopt" onclick="event.stopPropagation();addOpt(\''+sid+'\',\''+q.id+'\')">＋ 選択肢を追加</button>';
+      if(isActive){
+        html+='<button class="btn-aopt" onclick="event.stopPropagation();addOpt(\''+sid+'\',\''+q.id+'\')">＋ 選択肢を追加</button>';
+      }
       return html+'</div>';
     }
     case 'rating': return '<div class="pstars">★★★★★</div>';
