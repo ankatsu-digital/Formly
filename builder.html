@@ -608,63 +608,57 @@ function renderSectionQuestions(s){
 }
 
 function renderFlowUI(s,q){
-  // このセクション内で、この質問より後の質問リスト（+ 特殊オプション）
   var qi=s.questions.findIndex(function(x){return x.id===q.id;});
-  var after=s.questions.filter(function(x,i){return i>qi;}); // 後続質問
-  var all=s.questions.filter(function(x){return x.id!==q.id;}); // 全他質問
+  var all=s.questions.filter(function(x){return x.id!==q.id;});
   var hasChoice=['radio','checkbox','select'].includes(q.t)&&q.opts&&q.opts.length>0;
   var html='<div class="branch-ui">';
 
-  // 1) 選択肢系: 選択肢ごとの条件分岐
+  // 次の行き先の選択肢を生成する共通関数
+  function makeOpts(curVal){
+    var o='<option value="">次の質問（順番通り）</option>';
+    all.forEach(function(x){
+      var idx=s.questions.indexOf(x)+1;
+      o+='<option value="'+x.id+'"'+(curVal===x.id?' selected':'')+'>Q'+idx+'. '+esc(x.l.slice(0,16))+'</option>';
+    });
+    o+='<option value="skip_section"'+(curVal==='skip_section'?' selected':'')+'>⏭ このセクションをスキップ</option>';
+    // 他のセクションへ
+    sections.forEach(function(sec){
+      if(sec.id===s.id)return;
+      var sid2='sec:'+sec.id;
+      o+='<option value="'+sid2+'"'+(curVal===sid2?' selected':'')+'>📌 →「'+esc(sec.title.slice(0,14))+'」へ</option>';
+    });
+    o+='<option value="end"'+(curVal==='end'?' selected':'')+'>✅ 送信画面へ</option>';
+    return o;
+  }
+
   if(hasChoice){
-    html+='<div class="branch-title">🔀 選択肢ごとに次の質問を設定</div>';
+    html+='<div class="branch-title">🔀 選択肢ごとに次を設定</div>';
     q.opts.forEach(function(opt,oi){
       var cur=(q.branches&&q.branches[opt])||'';
       html+='<div class="brow">'
         +'<span class="b-opt" title="'+esc(opt)+'">'+esc(opt.length>10?opt.slice(0,10)+'…':opt)+'</span>'
         +'<span class="b-arr">→</span>'
         +'<select class="b-sel" onclick="event.stopPropagation()" onchange="setBranch(\''+s.id+'\',\''+q.id+'\','+oi+',this.value)">'
-          +'<option value="">次の質問（順番通り）</option>'
-          +all.map(function(x,i){
-            var idx=s.questions.indexOf(x)+1;
-            return '<option value="'+x.id+'"'+(cur===x.id?' selected':'')+'>Q'+idx+'. '+esc(x.l.slice(0,18))+'</option>';
-          }).join('')
-          +'<option value="skip_section"'+(cur==='skip_section'?' selected':'')+'>⏭ セクション終了</option>'
-          +'<option value="end"'+(cur==='end'?' selected':'')+'>✅ 送信画面へ</option>'
+          +makeOpts(cur)
         +'</select>'
       +'</div>';
     });
-    // デフォルト（どの選択肢にも一致しない場合）のnextQ
-    if(after.length){
-      html+='<div class="brow" style="border-top:1px solid rgba(108,99,255,.12);margin-top:5px;padding-top:5px;">'
-        +'<span class="b-opt" style="background:rgba(108,99,255,.04);color:var(--muted);">その他</span>'
-        +'<span class="b-arr">→</span>'
-        +'<select class="b-sel" onclick="event.stopPropagation()" onchange="setNextQ(\''+s.id+'\',\''+q.id+'\',this.value)">'
-          +'<option value="">次の質問（順番通り）</option>'
-          +all.map(function(x){
-            var idx=s.questions.indexOf(x)+1;
-            return '<option value="'+x.id+'"'+((q.nextQ||'')==x.id?' selected':'')+'>Q'+idx+'. '+esc(x.l.slice(0,18))+'</option>';
-          }).join('')
-          +'<option value="skip_section"'+((q.nextQ||'')==='skip_section'?' selected':'')+'>⏭ セクション終了</option>'
-          +'<option value="end"'+((q.nextQ||'')==='end'?' selected':'')+'>✅ 送信画面へ</option>'
-        +'</select>'
-      +'</div>';
-    }
+    // デフォルト
+    html+='<div class="brow" style="border-top:1px solid rgba(108,99,255,.12);margin-top:5px;padding-top:5px;">'
+      +'<span class="b-opt" style="background:rgba(108,99,255,.04);color:var(--muted);">その他</span>'
+      +'<span class="b-arr">→</span>'
+      +'<select class="b-sel" onclick="event.stopPropagation()" onchange="setNextQ(\''+s.id+'\',\''+q.id+'\',this.value)">'
+        +makeOpts(q.nextQ||'')
+      +'</select>'
+    +'</div>';
   } else {
-    // 2) 通常質問: 「回答後に進む質問」を設定
-    if(!all.length){return '';} // 他に質問がなければ表示しない
-    html+='<div class="branch-title">➡️ 回答後に進む質問</div>';
+    if(!all.length&&sections.length<=1){return '';}
+    html+='<div class="branch-title">➡️ 回答後に進む先</div>';
     html+='<div class="brow">'
       +'<span class="b-opt" style="background:rgba(108,99,255,.04);color:var(--muted);">回答後</span>'
       +'<span class="b-arr">→</span>'
       +'<select class="b-sel" onclick="event.stopPropagation()" onchange="setNextQ(\''+s.id+'\',\''+q.id+'\',this.value)">'
-        +'<option value="">次の質問（順番通り）</option>'
-        +all.map(function(x){
-          var idx=s.questions.indexOf(x)+1;
-          return '<option value="'+x.id+'"'+((q.nextQ||'')==x.id?' selected':'')+'>Q'+idx+'. '+esc(x.l.slice(0,18))+'</option>';
-        }).join('')
-        +'<option value="skip_section"'+((q.nextQ||'')==='skip_section'?' selected':'')+'>⏭ セクション終了</option>'
-        +'<option value="end"'+((q.nextQ||'')==='end'?' selected':'')+'>✅ 送信画面へ</option>'
+        +makeOpts(q.nextQ||'')
       +'</select>'
     +'</div>';
   }
