@@ -330,33 +330,95 @@ function renderField(s,si,q){
 
 // ===== セクション内条件分岐 =====
 // 選択肢が変わったとき、同じセクション内の質問を表示/非表示
+// ===== セクション内フロー制御 =====
+// 各セクション内で「表示する質問の順番」をqFlowとして管理
+// qFlow[si] = [qid, qid, ...] (表示順)
+var qFlows = {}; // {secIdx: [qid,...]}
+var qHistory = {}; // {secIdx: [qidx,...]}  戻る用
+
+function initQFlow(si){
+  var sections=formData.sections||[];
+  var s=sections[si];if(!s)return;
+  var qs=s.questions.filter(function(q){return q.t!=='2col'||true;}); // 全質問
+  qFlows[si]=qs.map(function(q){return q.id;});
+  qHistory[si]=[];
+}
+
+// 回答が変わったとき（選択肢変更時）に呼ぶ — 即時フロー再計算
+function onAnswerChange(si,qid){
+  // 何もしない（goNextのタイミングでフローを計算）
+}
+
+// セクション内の「次に表示すべきqid」を計算
+// 現在表示中のqidと回答を見て、nextQ/branchesに従う
+function getNextQId(si,currentQId){
+  var sections=formData.sections||[];
+  var s=sections[si];if(!s)return null;
+  var q=s.questions.find(function(x){return x.id===currentQId;});
+  if(!q)return null;
+  var val=answers[currentQId];
+  // 1) 選択肢系: branches[val] を確認
+  if(q.branches&&val!=null&&val!==''){
+    var branchTarget=Array.isArray(val)?q.branches[val[0]]:q.branches[val];
+    if(branchTarget){return branchTarget;} // 'end'/'skip_section' も含む
+  }
+  // 2) nextQ を確認
+  if(q.nextQ){return q.nextQ;}
+  // 3) 順番通り：次の質問のidを返す
+  var idx=s.questions.findIndex(function(x){return x.id===currentQId;});
+  if(idx>=0&&idx<s.questions.length-1){return s.questions[idx+1].id;}
+  return null; // セクション終了
+}
+
+// セクションsiを表示（質問はqFlowに従う）
+function showSecQuestions(si){
+  var sections=formData.sections||[];
+  var s=sections[si];if(!s)return;
+  // 全質問を非表示にしてから、表示すべきものだけ表示
+  s.questions.forEach(function(q){
+    var el=document.getElementById('qb_'+q.id);
+    if(el)el.classList.add('hidden');
+  });
+  // 今のqFlow[si]の質問を表示
+  var flow=qFlows[si]||s.questions.map(function(q){return q.id;});
+  flow.forEach(function(qid){
+    var el=document.getElementById('qb_'+qid);
+    if(el)el.classList.remove('hidden');
+  });
+}
+
 function applyBranch(si,qid){
+  // 回答が変わったとき、リアルタイムで後続質問の表示/非表示を更新
   var sections=formData.sections||[];
   var s=sections[parseInt(si)];if(!s)return;
   var q=s.questions.find(function(x){return x.id===qid;});if(!q)return;
   var val=answers[qid];
-  // まず全質問を表示に戻す（このセクション内）
-  s.questions.forEach(function(x){
-    var el=document.getElementById('qb_'+x.id);
+  // このqid以降の全質問を一旦表示に戻す
+  var qi=s.questions.findIndex(function(x){return x.id===qid;});
+  for(var i=qi+1;i<s.questions.length;i++){
+    var el=document.getElementById('qb_'+s.questions[i].id);
     if(el)el.classList.remove('hidden');
-  });
-  // branchesを適用
-  if(q.branches){
-    var targetId=q.branches[val];
-    if(targetId==='end'||targetId==='skip_section') return; // セクション送信時に処理
-    if(targetId){
-      // targetId の質問「以外」の、このセクション内でbranchableな質問を非表示
-      // ルール: 選択肢でtargetが指定されている場合、指定された質問のみ表示（他の分岐先を非表示）
-      var allBranchTargets={};
-      Object.values(q.branches||{}).forEach(function(tid){
-        if(tid&&tid!=='end'&&tid!=='skip_section')allBranchTargets[tid]=true;
-      });
-      Object.keys(allBranchTargets).forEach(function(tid){
-        if(tid!==targetId){
-          var el=document.getElementById('qb_'+tid);
-          if(el)el.classList.add('hidden');
-        }
-      });
+  }
+  // branchesやnextQに従って後続を非表示にする
+  if(q.branches||q.nextQ){
+    var target=null;
+    if(q.branches&&val!=null&&val!==''){
+      target=Array.isArray(val)?q.branches[val[0]]:q.branches[val];
+    }
+    if(!target&&q.nextQ)target=q.nextQ;
+    if(target&&target!=='end'&&target!=='skip_section'){
+      // targetより前にある質問（このqidより後）をスキップ（非表示）
+      var targetIdx=s.questions.findIndex(function(x){return x.id===target;});
+      for(var j=qi+1;j<targetIdx;j++){
+        var el2=document.getElementById('qb_'+s.questions[j].id);
+        if(el2)el2.classList.add('hidden');
+      }
+    } else if(target==='skip_section'||target==='end'){
+      // このqid以降を全非表示
+      for(var k=qi+1;k<s.questions.length;k++){
+        var el3=document.getElementById('qb_'+s.questions[k].id);
+        if(el3)el3.classList.add('hidden');
+      }
     }
   }
 }
@@ -397,6 +459,14 @@ function showSection(flowPos){
   var si=secFlow[flowPos];
   var el=document.getElementById('secpage_'+si);
   if(el)el.classList.add('active');
+  // このセクションの質問フローを初期化（全表示）
+  var s=sections[si];
+  if(s){
+    s.questions.forEach(function(q){
+      var qel=document.getElementById('qb_'+q.id);
+      if(qel)qel.classList.remove('hidden');
+    });
+  }
   var isLast=flowPos>=secFlow.length-1;
   document.getElementById('btnNext').textContent=isLast?'送信を確認 →':'次へ →';
   document.getElementById('btnBack').disabled=flowPos===0;
@@ -434,26 +504,22 @@ function goNext(){
 
   // 条件分岐でセクションジャンプを判定
   var nextFlowPos=currentSecIdx+1;
-  // セクション自体のnextSectionを確認
-  if(s.nextSection){
-    if(s.nextSection==='end'){showConfirm();return;}
-    var jumpSi=sections.findIndex(function(x){return x.id===s.nextSection;});
-    if(jumpSi>=0){
-      // secFlowにjumpSiを挿入（現在位置の次）
-      var already=secFlow.indexOf(jumpSi);
-      if(already>currentSecIdx){nextFlowPos=already;}
-      else{secFlow.splice(currentSecIdx+1,0,jumpSi);nextFlowPos=currentSecIdx+1;}
-    }
-  }
-  // 選択肢による'skip_section'チェック
-  var skipSection=false;
+  var endNow=false;
+  // 各質問のnextQ/branchesを確認してセクション終了判定
   s.questions.forEach(function(q){
+    if(endNow)return;
+    var el=document.getElementById('qb_'+q.id);
+    if(el&&el.classList.contains('hidden'))return; // 非表示質問はスキップ
     var val=answers[q.id];
-    if(q.branches&&q.branches[val]==='skip_section')skipSection=true;
-    if(q.branches&&q.branches[val]==='end'){showConfirm();skipSection='end';}
+    var target=null;
+    if(q.branches&&val!=null&&val!==''){
+      target=Array.isArray(val)?q.branches[val[0]]:q.branches[val];
+    }
+    if(!target&&q.nextQ)target=q.nextQ;
+    if(target==='end'){endNow=true;}
+    else if(target==='skip_section'){/* 次のセクションへ（デフォルト動作）*/}
   });
-  if(skipSection==='end')return;
-  if(skipSection){nextFlowPos=currentSecIdx+1;}
+  if(endNow){showConfirm();return;}
 
   showSection(nextFlowPos);
 }
