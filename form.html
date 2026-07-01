@@ -70,6 +70,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .slider-row{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:3px;}
 .file-drop{border:2px dashed rgba(108,99,255,.25);border-radius:10px;padding:22px;text-align:center;cursor:pointer;transition:all .15s;}
 .file-drop:hover{border-color:var(--p);}
+.file-drop.drag{border-color:var(--p);background:rgba(108,99,255,.05);}
+.file-drop.uploading{cursor:wait;opacity:.75;}
 .file-name{margin-top:7px;font-size:.8rem;color:var(--p);font-weight:600;}
 .agree-lbl{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1.5px solid rgba(108,99,255,.18);border-radius:9px;cursor:pointer;font-size:.88rem;line-height:1.6;background:var(--white);transition:all .15s;}
 .agree-lbl.chk{border-color:var(--p);background:rgba(108,99,255,.06);}
@@ -146,6 +148,11 @@ var params=new URLSearchParams(location.search);
 var formId=params.get('id'), previewId=params.get('preview');
 var formData=null;
 var answers={};
+
+// ===== Cloudinary（ファイルアップロード） =====
+var CLOUDINARY_CLOUD_NAME='yp1tfzon';
+var CLOUDINARY_UPLOAD_PRESET='formly_uploads';
+var fileUploadInFlight={}; // qId -> true の間はアップロード中
 
 // ===== フローの状態 =====
 // stepStack: 遷移履歴（戻る用）[{type:'q'|'sec', secIdx, qId}]
@@ -332,10 +339,13 @@ function buildField(q,si){
         +'<div class="slider-val" id="sv_'+id+'">50</div>'
         +'<div class="slider-row"><span>0</span><span>100</span></div></div>';
     case 'file':
-      return '<div class="file-drop" onclick="document.getElementById(\'f_'+id+'\').click()">'
-        +'<input type="file" id="f_'+id+'" style="display:none" onchange="setA(\''+id+'\',this.files[0]?this.files[0].name:\'\');document.getElementById(\'fn_'+id+'\').textContent=this.files[0]?this.files[0].name:\'\'">'
+      return '<div class="file-drop" id="fd_'+id+'" onclick="triggerFilePick(\''+id+'\')"'
+        +' ondragover="event.preventDefault();this.classList.add(\'drag\')"'
+        +' ondragleave="this.classList.remove(\'drag\')"'
+        +' ondrop="event.preventDefault();this.classList.remove(\'drag\');handleFileDrop(\''+id+'\',event)">'
+        +'<input type="file" id="f_'+id+'" style="display:none" onchange="handleFileSelect(\''+id+'\',this)">'
         +'<div style="font-size:1.3rem;margin-bottom:5px;">📎</div>'
-        +'<div style="font-size:.8rem;color:var(--muted);">クリックしてファイルを選択</div>'
+        +'<div style="font-size:.8rem;color:var(--muted);">クリックまたはドラッグ＆ドロップでファイルを選択（10MBまで）</div>'
         +'<div class="file-name" id="fn_'+id+'"></div></div>';
     case 'agree':
       return '<label class="agree-lbl" id="ag_'+id+'">'
@@ -565,6 +575,11 @@ function showConfirm(){
     if(q.t==='2col'){
       disp=(answers[q.id+'_L']||'')+'　'+(answers[q.id+'_R']||'');
       if(!disp.trim())disp='—';
+    } else if(q.t==='file'){
+      val=answers[q.id];
+      disp=val?('📎 <a href="'+e(val)+'" target="_blank" style="color:var(--p);font-weight:600;">'+e(answers[q.id+'_fname']||'アップロード済みファイル')+'</a>'):'—';
+      html+='<div class="confirm-field"><span class="confirm-lbl">'+e(q.l||'')+'</span><div class="confirm-val">'+disp+'</div></div>';
+      return;
     } else {
       val=answers[q.id];
       disp=Array.isArray(val)?val.join('、'):(val!=null&&val!==''?String(val):'—');
@@ -601,6 +616,66 @@ function sRad(id,v){
 function sChk(id,v,c){
   var key='co_'+id+'_'+v.replace(/[^a-zA-Z0-9]/g,'_');
   var el=document.getElementById(key);if(el)el.classList.toggle('chk',c);
+}
+
+// ===== ファイルアップロード（Cloudinary） =====
+function triggerFilePick(id){
+  if(fileUploadInFlight[id])return;
+  var inp=document.getElementById('f_'+id);
+  if(inp)inp.click();
+}
+function handleFileSelect(id,inputEl){
+  var file=inputEl.files&&inputEl.files[0];
+  if(file)processFile(id,file);
+  inputEl.value=''; // 同じファイルを選び直せるようにリセット
+}
+function handleFileDrop(id,ev){
+  var file=ev.dataTransfer&&ev.dataTransfer.files&&ev.dataTransfer.files[0];
+  if(file)processFile(id,file);
+}
+async function processFile(id,file){
+  var maxBytes=10*1024*1024; // 10MB（Cloudinary無料プランの目安）
+  var fnEl=document.getElementById('fn_'+id), fdEl=document.getElementById('fd_'+id);
+  if(file.size>maxBytes){
+    if(fnEl)fnEl.innerHTML='<span style="color:var(--coral)">⚠️ ファイルサイズが大きすぎます（10MB以下にしてください）</span>';
+    return;
+  }
+  fileUploadInFlight[id]=true;
+  if(fdEl)fdEl.classList.add('uploading');
+  updateNextBtnState();
+  if(fnEl)fnEl.innerHTML='<span style="color:var(--muted)">⏳ アップロード中... '+e(file.name)+'</span>';
+  try{
+    var url=await uploadToCloudinary(file);
+    answers[id]=url;
+    answers[id+'_fname']=file.name;
+    if(fnEl)fnEl.innerHTML='✅ '+e(file.name);
+  }catch(ex){
+    console.error('Cloudinaryアップロードエラー',ex);
+    if(fnEl)fnEl.innerHTML='<span style="color:var(--coral)">⚠️ アップロードに失敗しました。もう一度お試しください</span>';
+  }finally{
+    fileUploadInFlight[id]=false;
+    if(fdEl)fdEl.classList.remove('uploading');
+    updateNextBtnState();
+  }
+}
+function uploadToCloudinary(file){
+  return new Promise(function(resolve,reject){
+    var fd=new FormData();
+    fd.append('file',file);
+    fd.append('upload_preset',CLOUDINARY_UPLOAD_PRESET);
+    fetch('https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD_NAME+'/auto/upload',{method:'POST',body:fd})
+      .then(function(res){return res.json();})
+      .then(function(data){
+        if(data.secure_url)resolve(data.secure_url);
+        else reject(new Error((data.error&&data.error.message)||'upload failed'));
+      })
+      .catch(reject);
+  });
+}
+function updateNextBtnState(){
+  var anyUploading=Object.keys(fileUploadInFlight).some(function(k){return fileUploadInFlight[k];});
+  var btn=document.getElementById('btnNext');
+  if(btn)btn.disabled=anyUploading;
 }
 
 // ===== 送信 =====
