@@ -464,6 +464,16 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
           </div>
           <div class="toggle-sw" id="spamToggle"></div>
         </div>
+        <!-- 共同編集者 -->
+        <div class="tag-edit-area" id="editorsMgmtArea">
+          <div class="tag-edit-title">👥 共同編集者</div>
+          <div style="font-size:.76rem;color:var(--muted);margin-bottom:8px;">追加したメールアドレスでログイン中のユーザーはこのフォームを閲覧・編集できます（Firestoreセキュリティルールの設定が必要です）</div>
+          <div class="tag-edit-list" id="drEditorsList"></div>
+          <div class="tag-add-row" id="drEditorsAddRow">
+            <input class="tag-input" id="editorEmailInput" placeholder="編集者のメールアドレス...">
+            <button class="btn-sm btn-p" onclick="addEditorDash()" style="font-size:.74rem;">招待</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -525,6 +535,8 @@ var user=null, forms=[], filteredForms=[], curForm=null, resps=[], filteredResps
 var calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 var activeTag='', trendChartInst=null;
 var rtUnsubscribe=null; // リアルタイム購読解除用
+var editorRtUnsubscribe=null; // 共同編集フォームのリアルタイム購読解除用
+var ownedFormsRaw=[], sharedFormsRaw=[];
 var selectedFormIds=new Set();
 var prevCounts={}; // フォームID -> 直前の回答数（新着検知用）
 var integSettings={serviceId:'',templateId:'',publicKey:''};
@@ -640,31 +652,46 @@ async function sendTestEmail(){
 }
 
 // ===== リアルタイム購読 =====
+function mergeFormSources(){
+  var map={};
+  ownedFormsRaw.forEach(function(f){map[f.id]=Object.assign({},f,{isOwner:true});});
+  sharedFormsRaw.forEach(function(f){if(!map[f.id])map[f.id]=Object.assign({},f,{isOwner:false});});
+  var newForms=Object.keys(map).map(function(k){return map[k];});
+  // 新着回答の検知（通知トリガー）
+  newForms.forEach(function(f){
+    var prev=prevCounts[f.id];
+    var cur=f.responseCount||0;
+    if(prev!==undefined&&cur>prev){
+      if(f.notifyEmail)sendNotificationEmail(f.notifyEmail,f);
+      if(f.webhookUrl)sendWebhookNotification(f.webhookUrl,f);
+    }
+    prevCounts[f.id]=cur;
+  });
+  forms=newForms;
+  forms.sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  applyFilters();
+  renderStats();
+  renderTagBar();
+  // 開いているドロワーのリアルタイム更新
+  if(curForm){
+    var updated=forms.find(function(f){return f.id===curForm.id;});
+    if(updated){curForm=updated;document.getElementById('drS0').textContent=curForm.responseCount||0;}
+  }
+}
 function setupRealtimeListener(){
   if(rtUnsubscribe)rtUnsubscribe();
+  if(editorRtUnsubscribe)editorRtUnsubscribe();
   rtUnsubscribe=db.collection('forms').where('userId','==',user.uid).onSnapshot(function(snap){
-    var newForms=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    // 新着回答の検知（通知トリガー）
-    newForms.forEach(function(f){
-      var prev=prevCounts[f.id];
-      var cur=f.responseCount||0;
-      if(prev!==undefined&&cur>prev){
-        if(f.notifyEmail)sendNotificationEmail(f.notifyEmail,f);
-        if(f.webhookUrl)sendWebhookNotification(f.webhookUrl,f);
-      }
-      prevCounts[f.id]=cur;
-    });
-    forms=newForms;
-    forms.sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
-    applyFilters();
-    renderStats();
-    renderTagBar();
-    // 開いているドロワーのリアルタイム更新
-    if(curForm){
-      var updated=forms.find(function(f){return f.id===curForm.id;});
-      if(updated){curForm=updated;document.getElementById('drS0').textContent=curForm.responseCount||0;}
-    }
+    ownedFormsRaw=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    mergeFormSources();
   },function(err){console.error('RT error:',err);});
+  // 共同編集者として招待されているフォーム（自分のメールアドレスがeditorsに含まれるもの）
+  if(user.email){
+    editorRtUnsubscribe=db.collection('forms').where('editors','array-contains',user.email).onSnapshot(function(snap){
+      sharedFormsRaw=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+      mergeFormSources();
+    },function(err){console.warn('共同編集フォームの取得に失敗しました（Firestoreセキュリティルールの確認が必要な場合があります）:',err);});
+  }
 }
 
 // ===== フィルター・ソート =====
@@ -753,6 +780,7 @@ function renderGrid(){
         +'<div class="fc-desc">'+e(f.description||'説明なし')+'</div>'
         +(tags?'<div class="fc-tags">'+tags+'</div>':'')
         +'<div class="fc-meta"><span class="badge '+STATUS_CLS[st]+'">'+STATUS_LABEL[st]+'</span>'
+          +(f.isOwner===false?'<span class="badge" style="background:rgba(0,180,216,.12);color:#0089A8;">👥 共同編集</span>':'')
           +'<span style="font-size:.66rem;color:var(--muted);">Q'+qs.length+'問</span>'
           +'<span style="font-size:.66rem;color:var(--muted);">'+date+'</span>'
         +'</div>'
@@ -764,7 +792,7 @@ function renderGrid(){
           +'<a href="builder.html?id='+f.id+'" class="fact" title="編集" onclick="event.stopPropagation()">✏️</a>'
           +'<div class="fact" title="複製" onclick="event.stopPropagation();curForm=forms.find(function(x){return x.id===\''+f.id+'\';});duplicateForm()">📋</div>'
           +'<div class="fact" title="'+(f.archived?'復元':'アーカイブ')+'" onclick="event.stopPropagation();toggleArchive(\''+f.id+'\')">'+(f.archived?'📤':'📦')+'</div>'
-          +'<div class="fact del" title="削除" onclick="event.stopPropagation();confirmDel(\''+f.id+'\',\'form\')">🗑</div>'
+          +(f.isOwner===false?'':'<div class="fact del" title="削除" onclick="event.stopPropagation();confirmDel(\''+f.id+'\',\'form\')">🗑</div>')
         +'</div>'
       +'</div>'
     +'</div>';
@@ -823,15 +851,19 @@ function bulkExportCSV(){
 }
 function bulkDeletePrompt(){
   if(!selectedFormIds.size)return;
+  var ids=Array.from(selectedFormIds);
+  var deletable=ids.filter(function(id){var f=forms.find(function(x){return x.id===id;});return !f||f.isOwner!==false;});
+  var skipped=ids.length-deletable.length;
+  if(!deletable.length){showToast('オーナーではないため削除できません');return;}
   document.getElementById('confirmIcon').textContent='🗑️';
-  document.getElementById('confirmTitle').textContent=selectedFormIds.size+'件を削除';
-  document.getElementById('confirmSub').textContent='選択した'+selectedFormIds.size+'件のフォームを削除します。回答データは残ります。元に戻せません。';
+  document.getElementById('confirmTitle').textContent=deletable.length+'件を削除';
+  document.getElementById('confirmSub').textContent='選択した'+deletable.length+'件のフォームを削除します。回答データは残ります。元に戻せません。'+(skipped?'（オーナーではない'+skipped+'件はスキップされます）':'');
   document.getElementById('confirmBtn').textContent='削除する';
   document.getElementById('confirmBtn').onclick=function(){execBulkDelete();closeConfirm();};
   document.getElementById('confirmOverlay').classList.add('open');
 }
 async function execBulkDelete(){
-  var ids=Array.from(selectedFormIds);
+  var ids=Array.from(selectedFormIds).filter(function(id){var f=forms.find(function(x){return x.id===id;});return !f||f.isOwner!==false;});
   showToast('削除中...');
   try{
     await Promise.all(ids.map(function(id){return db.collection('forms').doc(id).delete();}));
@@ -863,6 +895,7 @@ async function openDrawer(fid){
   var st=formStatus(curForm);
   var qs=getAllQ(curForm).filter(function(q){return qT(q)!=='section';});
   document.getElementById('drMeta').innerHTML='<span class="badge '+STATUS_CLS[st]+'">'+STATUS_LABEL[st]+'</span>'
+    +(curForm.isOwner===false?'<span class="badge" style="background:rgba(0,180,216,.18);color:#8FE3F5;">👥 共同編集</span>':'')
     +'<span>Q'+qs.length+'問</span>'
     +(curForm.createdAt?'<span>'+new Date(curForm.createdAt).toLocaleDateString('ja-JP')+'</span>':'');
   document.getElementById('drS0').textContent=curForm.responseCount||0;
@@ -944,6 +977,11 @@ function renderResps(){
       // 2カラムの場合
       if(r.answers&&r.answers[q.id+'_L']!==undefined){
         disp=(r.answers[q.id+'_L']||'')+'　'+(r.answers[q.id+'_R']||'');
+      }
+      // ファイルアップロード（Cloudinary URL）の場合はリンク表示
+      if(qT(q)==='file'&&v){
+        var fname=(r.answers&&r.answers[q.id+'_fname'])||'ファイルを開く';
+        return '<div class="rfield"><span class="rfield-label">'+e(qL(q))+'</span><div class="rfield-val">📎 <a href="'+e(v)+'" target="_blank" style="color:var(--p);font-weight:600;">'+e(fname)+'</a></div></div>';
       }
       return '<div class="rfield"><span class="rfield-label">'+e(qL(q))+'</span><div class="rfield-val">'+e(disp)+'</div></div>';
     }).join('');
@@ -1147,6 +1185,46 @@ function renderSettingsTab(f){
   }).join('');
   // タグ編集
   renderTagEdit(f);
+  // 共同編集者
+  renderEditorsMgmt(f);
+}
+function renderEditorsMgmt(f){
+  var box=document.getElementById('drEditorsList');
+  if(!box||!f)return;
+  var editors=f.editors||[];
+  var canManage=f.isOwner!==false;
+  box.innerHTML=editors.length?editors.map(function(em){
+    return '<div class="tag-edit-item">'+e(em)+(canManage?'<button class="tag-del" onclick="removeEditorDash(\''+em.replace(/'/g,"\\'")+'\')">✕</button>':'')+'</div>';
+  }).join(''):'<div style="font-size:.73rem;color:var(--muted);">まだ共同編集者はいません</div>';
+  var addRow=document.getElementById('drEditorsAddRow');
+  if(addRow)addRow.style.display=canManage?'flex':'none';
+}
+async function addEditorDash(){
+  if(!curForm)return;
+  if(curForm.isOwner===false){showToast('オーナーのみ編集者を管理できます');return;}
+  var v=document.getElementById('editorEmailInput').value.trim().toLowerCase();
+  if(!v||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){showToast('正しいメールアドレスを入力してください');return;}
+  if(user&&v===(user.email||'').toLowerCase()){showToast('自分自身は追加できません');return;}
+  var editors=curForm.editors||[];
+  if(editors.includes(v)){showToast('すでに追加されています');return;}
+  editors=editors.concat([v]);
+  try{
+    await db.collection('forms').doc(curForm.id).update({editors:editors});
+    curForm.editors=editors;
+    document.getElementById('editorEmailInput').value='';
+    renderEditorsMgmt(curForm);
+    showToast('✅ 編集者を追加しました');
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+async function removeEditorDash(email){
+  if(!curForm||curForm.isOwner===false)return;
+  var editors=(curForm.editors||[]).filter(function(x){return x!==email;});
+  try{
+    await db.collection('forms').doc(curForm.id).update({editors:editors});
+    curForm.editors=editors;
+    renderEditorsMgmt(curForm);
+    showToast('編集者を削除しました');
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
 }
 function renderTagEdit(f){
   var tags=f.tags||[];
@@ -1200,13 +1278,15 @@ async function duplicateForm(){
   if(!curForm||!user)return;
   showToast('📋 複製中...');
   var data=JSON.parse(JSON.stringify(curForm));
-  delete data.id; delete data._id;
+  delete data.id; delete data._id; delete data.isOwner;
   data.title=(data.title||'無題')+'（コピー）';
   data.responseCount=0;
   data.archived=false;
+  data.editors=[];
   data.createdAt=new Date().toISOString();
   data.updatedAt=new Date().toISOString();
   data.userId=user.uid;
+  data.ownerEmail=user.email||null;
   try{
     var ref=await db.collection('forms').add(data);
     showToast('✅ 複製しました！');
@@ -1279,6 +1359,7 @@ function confirmDel(id,type,ridx){
   var title,sub,btn;
   if(type==='form'){
     var f=forms.find(function(x){return x.id===id;});
+    if(f&&f.isOwner===false){showToast('オーナーのみ削除できます');return;}
     title='フォームを削除';sub='「'+(f&&f.title||'このフォーム')+'」を削除します。回答データは残ります。';btn='削除する';
     document.getElementById('confirmBtn').onclick=function(){execDelForm(id);closeConfirm();};
   } else {
@@ -1313,7 +1394,7 @@ async function execDelResp(rid,ridx){
   }catch(ex){showToast('❌ エラー: '+ex.message);}
 }
 
-function doSignOut(){if(rtUnsubscribe)rtUnsubscribe();auth.signOut().then(function(){location.href='index.html';});}
+function doSignOut(){if(rtUnsubscribe)rtUnsubscribe();if(editorRtUnsubscribe)editorRtUnsubscribe();auth.signOut().then(function(){location.href='index.html';});}
 
 var toastT;
 function showToast(msg){
