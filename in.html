@@ -1264,8 +1264,15 @@ function printResponses(){
   });
   var pa=document.getElementById('printArea');
   pa.innerHTML=html;
-  window.print();
+  pa.style.display='block';
+  setTimeout(function(){
+    window.print();
+  },50);
 }
+window.addEventListener('afterprint',function(){
+  var pa=document.getElementById('printArea');
+  if(pa){pa.style.display='none';pa.innerHTML='';}
+});
 
 // ===== 削除確認 =====
 function confirmDel(id,type,ridx){
