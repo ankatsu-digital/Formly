@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ダッシュボード — Formly</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+:root{
+  --p:#6C63FF;--pd:#4A42CC;--coral:#FF6584;--dark:#0F0F1A;--dark2:#1A1A2E;
+  --bg:#F0F1FA;--bg2:#E8E9F8;--text:#1E1E36;--muted:#6B6B8E;--white:#fff;
+  --border:rgba(108,99,255,0.11);--green:#06D6A0;--yellow:#FEC02F;--red:#FF4D6D;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+/* NAV */
+.nav{height:54px;background:var(--dark);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;background:linear-gradient(135deg,#8B85FF,#FF6584);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none;margin-right:6px;}
+.nav-links{display:flex;gap:3px;}
+.nl{padding:5px 11px;border-radius:6px;font-size:.76rem;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;transition:all .15s;}
+.nl:hover,.nl.on{background:rgba(255,255,255,.1);color:#fff;}
+.nav-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.uav{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--coral));display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;color:#fff;}
+.uname-nav{font-size:.75rem;color:rgba(255,255,255,.65);font-weight:500;}
+.btn-sm{padding:6px 13px;border-radius:7px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+.btn-p{background:var(--p);color:#fff;}.btn-p:hover{background:var(--pd);}
+.btn-g{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.12);}.btn-g:hover{background:rgba(255,255,255,.18);color:#fff;}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--dark) 0%,var(--dark2) 55%,#1E1060 100%);padding:28px 24px 24px;position:relative;overflow:hidden;}
+.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 85% 50%,rgba(108,99,255,.15),transparent 70%);pointer-events:none;}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap;position:relative;}
+.hero-greet{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:#fff;line-height:1.2;}
+.hero-sub{font-size:.78rem;color:rgba(255,255,255,.45);margin-top:3px;}
+.hero-acts{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+/* リアルタイム更新インジケーター */
+.rt-indicator{display:flex;align-items:center;gap:5px;font-size:.7rem;color:rgba(255,255,255,.5);font-weight:500;}
+.rt-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:rtpulse 2s infinite;}
+@keyframes rtpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;position:relative;}
+.stat-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:14px 16px;backdrop-filter:blur(4px);transition:all .2s;}
+.stat-card:hover{background:rgba(255,255,255,.1);}
+.stat-label{font-size:.62rem;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px;display:flex;align-items:center;gap:4px;}
+.stat-val{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#fff;line-height:1;}
+.stat-change{font-size:.68rem;color:rgba(255,255,255,.38);margin-top:3px;}
+
+/* PAGE */
+.page{padding:20px 24px;flex:1;display:flex;flex-direction:column;gap:20px;}
+
+/* タグフィルター */
+.tag-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.tag-pill{padding:5px 12px;border-radius:100px;font-size:.73rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--muted);transition:all .15s;}
+.tag-pill.on{background:var(--p);color:#fff;border-color:var(--p);}
+.tag-pill:hover:not(.on){border-color:var(--p);color:var(--p);}
+.tag-add-btn{padding:5px 10px;border-radius:100px;font-size:.73rem;font-weight:600;cursor:pointer;border:1.5px dashed var(--border);background:transparent;color:var(--muted);font-family:'Inter',sans-serif;transition:all .15s;}
+.tag-add-btn:hover{border-color:var(--p);color:var(--p);}
+
+/* SEC HEADER */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sec-title{font-family:'Syne',sans-serif;font-size:.92rem;font-weight:800;color:var(--text);}
+
+/* フォームグリッド */
+.forms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:13px;}
+.form-card{background:var(--white);border-radius:13px;border:1.5px solid var(--border);overflow:hidden;transition:all .18s;cursor:pointer;position:relative;}
+.form-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(108,99,255,.11);}
+.form-card.selected{border-color:var(--p);box-shadow:0 0 0 2px rgba(108,99,255,.25);}
+.fc-check{position:absolute;top:9px;left:9px;width:20px;height:20px;border-radius:6px;border:1.5px solid rgba(255,255,255,.7);background:rgba(15,15,26,.35);z-index:2;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff;}
+.fc-check.on{background:var(--p);border-color:var(--p);}
+.fc-top{height:4px;}
+.fc-body{padding:14px 16px 10px;}
+.fc-name{font-family:'Syne',sans-serif;font-size:.92rem;font-weight:800;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fc-desc{font-size:.73rem;color:var(--muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2em;}
+.fc-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.fc-tag{font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:100px;background:var(--bg2);color:var(--muted);}
+.fc-meta{display:flex;align-items:center;gap:7px;margin-top:8px;flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:100px;font-size:.63rem;font-weight:700;}
+.b-on{background:rgba(6,214,160,.12);color:#04A680;}.b-off{background:rgba(255,101,132,.1);color:var(--coral);}.b-pre{background:rgba(254,192,47,.12);color:#9B7000;}.b-arc{background:var(--bg2);color:var(--muted);}
+.fc-foot{padding:9px 16px;border-top:1px solid var(--border);background:#FAFBFF;display:flex;align-items:center;justify-content:space-between;}
+.fc-count{font-size:.7rem;color:var(--muted);font-weight:500;}
+.fc-acts{display:flex;gap:3px;}
+.fact{width:25px;height:25px;border-radius:6px;border:1.5px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:.72rem;cursor:pointer;transition:all .12s;text-decoration:none;color:var(--text);}
+.fact:hover{border-color:var(--p);color:var(--p);}
+.fact.del:hover{border-color:var(--coral);color:var(--coral);}
+.empty-card{background:var(--white);border-radius:13px;border:2px dashed rgba(108,99,255,.18);padding:36px;text-align:center;color:var(--muted);}
+
+/* 一括操作バー */
+.bulk-bar{display:none;align-items:center;gap:8px;background:var(--dark);border-radius:11px;padding:9px 14px;flex-wrap:wrap;}
+.bulk-bar.show{display:flex;}
+.bulk-count{font-size:.78rem;font-weight:700;color:#fff;margin-right:4px;}
+.bulk-btn{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:6px 11px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.bulk-btn:hover{background:rgba(255,255,255,.2);}
+.bulk-btn.danger:hover{background:rgba(255,77,109,.35);}
+.bulk-btn.clear{margin-left:auto;background:transparent;border-color:transparent;color:rgba(255,255,255,.5);}
+
+/* DRAWER */
+.drawer-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(15,15,26,.55);backdrop-filter:blur(5px);}
+.drawer-overlay.open{display:flex;animation:fi .18s;}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(740px,96vw);background:var(--white);display:flex;flex-direction:column;box-shadow:-10px 0 44px rgba(0,0,0,.15);animation:drIn .25s cubic-bezier(.22,1,.36,1);}
+@keyframes drIn{from{transform:translateX(100%)}to{transform:none}}
+.dr-hero{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:18px 22px;display:flex;align-items:flex-start;gap:12px;flex-shrink:0;}
+.dr-color-bar{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0;min-height:36px;}
+.dr-info{flex:1;min-width:0;}
+.dr-title{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dr-meta{font-size:.7rem;color:rgba(255,255,255,.4);display:flex;gap:10px;flex-wrap:wrap;}
+.dr-close{background:rgba(255,255,255,.1);border:none;border-radius:7px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:rgba(255,255,255,.65);flex-shrink:0;}
+.dr-close:hover{background:rgba(255,255,255,.2);color:#fff;}
+.dr-stats{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border);flex-shrink:0;}
+.dr-stat{padding:11px 16px;text-align:center;border-right:1px solid var(--border);}
+.dr-stat:last-child{border-right:none;}
+.dr-stat-v{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--text);}
+.dr-stat-l{font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:1px;}
+.dr-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 18px;flex-shrink:0;overflow-x:auto;}
+.dr-tab{padding:11px 12px;font-size:.76rem;font-weight:600;color:var(--muted);cursor:pointer;border:none;border-bottom:2px solid transparent;background:transparent;font-family:'Inter',sans-serif;transition:all .15s;white-space:nowrap;}
+.dr-tab.on{color:var(--p);border-bottom-color:var(--p);}
+.dr-body{flex:1;overflow-y:auto;padding:18px 20px;}
+
+/* 共有タブ */
+.url-row{display:flex;gap:7px;margin-bottom:12px;}
+.url-box{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.75rem;font-family:monospace;word-break:break-all;color:var(--text);}
+.btn-copy{background:var(--p);color:#fff;border:none;border-radius:7px;padding:8px 13px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+.action-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:7px;margin-bottom:16px;}
+.action-tile{background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:11px 12px;cursor:pointer;transition:all .15s;text-decoration:none;display:flex;align-items:center;gap:7px;color:var(--text);}
+.action-tile:hover{border-color:var(--p);background:rgba(108,99,255,.04);}
+.action-tile .ai{font-size:1.1rem;}
+.action-tile .at{font-size:.73rem;font-weight:600;}
+.qr-section{text-align:center;background:var(--bg);border:1.5px solid var(--border);border-radius:11px;padding:18px;}
+.qr-section h4{font-family:'Syne',sans-serif;font-size:.83rem;font-weight:700;margin-bottom:10px;}
+#qrDivD{width:140px;margin:0 auto 10px;}
+/* 埋め込みコード */
+.embed-box{background:#1A1A2E;border-radius:9px;padding:12px 14px;font-size:.72rem;font-family:monospace;color:#a0a0d0;word-break:break-all;margin-top:10px;white-space:pre-wrap;}
+
+/* 回答タブ */
+.res-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.res-count{font-size:.8rem;font-weight:600;color:var(--text);}
+.res-search{flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.76rem;font-family:'Inter',sans-serif;outline:none;background:var(--bg);}
+.res-search:focus{border-color:var(--p);}
+.sort-sel{padding:6px 9px;border:1.5px solid var(--border);border-radius:7px;font-size:.74rem;font-family:'Inter',sans-serif;background:var(--bg);outline:none;cursor:pointer;}
+.rlist{display:flex;flex-direction:column;gap:7px;}
+.rcard{background:var(--bg);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;}
+.rcard-head{padding:8px 12px;background:var(--bg2);display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.rcard-head:hover{background:#DDE0F4;}
+.rcard-num{font-size:.7rem;font-weight:700;color:var(--p);}
+.rcard-time{font-size:.66rem;color:var(--muted);flex:1;}
+.rcard-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:.7rem;padding:2px 5px;border-radius:4px;transition:all .12s;}
+.rcard-del:hover{background:rgba(255,101,132,.12);color:var(--coral);}
+.rcard-body{padding:10px 12px;display:none;}
+.rcard.open .rcard-body{display:block;}
+.rfield{margin-bottom:6px;}.rfield:last-child{margin-bottom:0;}
+.rfield-label{font-size:.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;}
+.rfield-val{font-size:.79rem;color:var(--text);}
+.rstatus-sel{font-size:.66rem;font-weight:700;border-radius:100px;padding:2px 8px;border:1.5px solid var(--border);font-family:'Inter',sans-serif;cursor:pointer;background:var(--white);}
+.rstatus-sel.st-new{color:#9B7000;border-color:rgba(254,192,47,.4);background:rgba(254,192,47,.1);}
+.rstatus-sel.st-done{color:#04A680;border-color:rgba(6,214,160,.4);background:rgba(6,214,160,.1);}
+.rstatus-sel.st-flag{color:var(--coral);border-color:rgba(255,101,132,.4);background:rgba(255,101,132,.1);}
+.rmemo{width:100%;margin-top:8px;padding:7px 9px;border:1.5px solid var(--border);border-radius:7px;font-size:.74rem;font-family:'Inter',sans-serif;resize:vertical;min-height:44px;background:var(--white);outline:none;}
+.rmemo:focus{border-color:var(--p);}
+
+/* 集計タブ */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.chart-card{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:13px 14px;}
+.chart-title{font-size:.76rem;font-weight:700;color:var(--text);margin-bottom:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.chart-avg{font-size:.66rem;font-weight:700;color:var(--p);background:rgba(108,99,255,.1);padding:1px 7px;border-radius:100px;white-space:nowrap;}
+.chart-wrap{height:155px;position:relative;}
+.text-ans-list{list-style:none;display:flex;flex-direction:column;gap:3px;max-height:145px;overflow-y:auto;}
+.text-ans-list li{font-size:.73rem;padding:4px 8px;background:var(--white);border-radius:5px;border:1px solid var(--border);}
+
+/* トレンドグラフタブ */
+.trend-card{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px;}
+.trend-title{font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:12px;}
+.trend-wrap{height:200px;position:relative;}
+.trend-empty{text-align:center;padding:40px;color:var(--muted);font-size:.82rem;}
+
+/* カレンダータブ */
+.cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.cal-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:.8rem;font-family:'Inter',sans-serif;}
+.cal-btn:hover{border-color:var(--p);}
+.cal-month{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;color:var(--text);flex:1;text-align:center;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day-lbl{text-align:center;font-size:.65rem;font-weight:700;color:var(--muted);padding:4px 0;}
+.cal-cell{min-height:44px;background:var(--bg);border:1.5px solid var(--border);border-radius:7px;padding:4px 6px;cursor:pointer;transition:all .12s;position:relative;}
+.cal-cell:hover{border-color:var(--p);}
+.cal-cell.today{border-color:var(--p);background:rgba(108,99,255,.06);}
+.cal-cell.other-month{opacity:.35;}
+.cal-cell .cal-date{font-size:.68rem;font-weight:600;color:var(--text);}
+.cal-cell .cal-dot{width:5px;height:5px;border-radius:50%;margin:2px auto 0;}
+.cal-cell .cal-count{font-size:.62rem;font-weight:700;text-align:center;color:var(--p);}
+
+/* 設定タブ */
+.settings-info{display:flex;flex-direction:column;gap:8px;}
+.sinfo-row{background:var(--bg);border-radius:8px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sinfo-lbl{font-size:.76rem;font-weight:600;color:var(--text);}
+.sinfo-val{font-size:.74rem;color:var(--muted);font-weight:500;text-align:right;}
+.sinfo-badge{font-size:.67rem;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;}
+.sib-on{background:rgba(6,214,160,.12);color:#04A680;}.sib-off{background:var(--bg2);color:var(--muted);}
+/* タグ編集（設定タブ内） */
+.tag-edit-area{margin-top:14px;}
+.tag-edit-title{font-size:.76rem;font-weight:700;color:var(--text);margin-bottom:8px;}
+.tag-edit-list{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.tag-edit-item{display:flex;align-items:center;gap:4px;background:var(--bg2);border-radius:100px;padding:3px 8px 3px 10px;font-size:.73rem;font-weight:600;color:var(--text);}
+.tag-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:.65rem;padding:0 1px;}
+.tag-del:hover{color:var(--coral);}
+.tag-add-row{display:flex;gap:6px;}
+.tag-input{flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.76rem;font-family:'Inter',sans-serif;outline:none;background:var(--white);}
+.tag-input:focus{border-color:var(--p);}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:8px;padding:10px 13px;margin-top:8px;}
+.toggle-sw{position:relative;width:36px;height:20px;background:var(--bg2);border-radius:100px;cursor:pointer;border:1.5px solid var(--border);flex-shrink:0;}
+.toggle-sw.on{background:var(--p);border-color:var(--p);}
+.toggle-sw::after{content:'';position:absolute;top:1px;left:1px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .15s;}
+.toggle-sw.on::after{transform:translateX(16px);}
+
+/* 削除確認 */
+.confirm-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(15,15,26,.6);align-items:center;justify-content:center;}
+.confirm-overlay.open{display:flex;animation:fi .15s;}
+.confirm-box{background:var(--white);border-radius:14px;padding:26px;max-width:360px;width:90%;text-align:center;box-shadow:0 16px 50px rgba(0,0,0,.2);}
+.confirm-icon{font-size:2.3rem;margin-bottom:10px;}
+.confirm-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:7px;}
+.confirm-sub{font-size:.8rem;color:var(--muted);line-height:1.6;margin-bottom:18px;}
+.confirm-btns{display:flex;gap:9px;justify-content:center;}
+.btn-cancel{background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:8px 20px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-del-confirm{background:var(--coral);color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+
+/* 通知/連携設定モーダル */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(15,15,26,.6);align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;animation:fi .15s;}
+.modal-box{background:var(--white);border-radius:16px;padding:22px;max-width:440px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:0 16px 50px rgba(0,0,0,.22);}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.modal-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;}
+.modal-close{background:var(--bg);border:none;border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:.8rem;color:var(--muted);}
+.modal-sub{font-size:.75rem;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+.field-group{margin-bottom:12px;}
+.field-lbl{font-size:.72rem;font-weight:700;color:var(--text);margin-bottom:5px;display:block;}
+.field-input{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem;font-family:'Inter',sans-serif;outline:none;background:var(--bg);}
+.field-input:focus{border-color:var(--p);}
+.field-hint{font-size:.66rem;color:var(--muted);margin-top:4px;line-height:1.5;}
+
+/* toast */
+.toast{position:fixed;bottom:18px;right:18px;z-index:999;background:var(--dark);color:#fff;border-radius:8px;padding:10px 16px;font-size:.78rem;font-weight:500;opacity:0;pointer-events:none;transition:opacity .22s;box-shadow:0 5px 22px rgba(0,0,0,.22);}
+.toast.show{opacity:1;}
+
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr);}.chart-grid{grid-template-columns:1fr;}.dr-stats{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.nav{padding:0 12px;}.hero{padding:18px 14px;}.page{padding:12px;}.drawer{width:100%;}.forms-grid{grid-template-columns:1fr;}}
+
+@media print{
+  body *{visibility:hidden;}
+  #printArea,#printArea *{visibility:visible;}
+  #printArea{position:absolute;top:0;left:0;width:100%;padding:20px;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">Formly</a>
+  <div class="nav-links">
+    <a class="nl on" href="dashboard.html">ダッシュボード</a>
+    <a class="nl" href="builder.html">作成</a>
+  </div>
+  <div class="nav-r">
+    <div class="rt-indicator" id="rtIndicator"><div class="rt-dot"></div><span>リアルタイム</span></div>
+    <button class="btn-sm btn-g" onclick="openIntegrationsModal()">🔌 連携設定</button>
+    <a href="builder.html" class="btn-sm btn-p">＋ 新しいフォーム</a>
+    <div class="uav" id="uav">?</div>
+    <span class="uname-nav" id="uname"></span>
+    <button class="btn-sm btn-g" onclick="doSignOut()">ログアウト</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <div class="hero-greet" id="heroGreet">こんにちは 👋</div>
+      <div class="hero-sub">フォームを管理・集計しましょう</div>
+    </div>
+    <div class="hero-acts">
+      <button class="btn-sm btn-g" onclick="exportAll()">📥 全CSV</button>
+      <a href="builder.html" class="btn-sm btn-p">＋ 新しいフォーム</a>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">📋 フォーム数</div><div class="stat-val" id="sv0">—</div><div class="stat-change" id="sc0">作成済み</div></div>
+    <div class="stat-card"><div class="stat-label">💬 総回答数</div><div class="stat-val" id="sv1">—</div><div class="stat-change" id="sc1">全フォーム合計</div></div>
+    <div class="stat-card"><div class="stat-label">🟢 公開中</div><div class="stat-val" id="sv2">—</div><div class="stat-change" id="sc2">受付中</div></div>
+    <div class="stat-card"><div class="stat-label">📈 平均回答</div><div class="stat-val" id="sv3">—</div><div class="stat-change">フォームあたり</div></div>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+  <!-- 一括操作バー -->
+  <div class="bulk-bar" id="bulkBar">
+    <span class="bulk-count" id="bulkCount">0件選択中</span>
+    <button class="bulk-btn" onclick="bulkTagPrompt()">🏷️ タグ付け</button>
+    <button class="bulk-btn" onclick="bulkArchive(true)">📦 アーカイブ</button>
+    <button class="bulk-btn" onclick="bulkArchive(false)">📤 復元</button>
+    <button class="bulk-btn" onclick="bulkExportCSV()">📥 CSV出力</button>
+    <button class="bulk-btn danger" onclick="bulkDeletePrompt()">🗑 削除</button>
+    <button class="bulk-btn clear" onclick="clearSelection()">選択解除</button>
+  </div>
+  <!-- タグフィルター -->
+  <div>
+    <div class="tag-bar" id="tagBar">
+      <div class="tag-pill on" data-tag="" onclick="filterByTag(this)">すべて</div>
+    </div>
+  </div>
+  <!-- フォーム一覧 -->
+  <div>
+    <div class="sec-hdr">
+      <div class="sec-title" id="formsTitle">マイフォーム</div>
+      <div style="display:flex;gap:7px;">
+        <input id="searchInput" type="text" placeholder="🔍 検索..." style="padding:6px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.74rem;font-family:'Inter',sans-serif;outline:none;width:160px;" oninput="filterForms(this.value)">
+        <select id="sortSel" onchange="sortForms(this.value)" style="padding:6px 9px;border:1.5px solid var(--border);border-radius:7px;font-size:.73rem;font-family:'Inter',sans-serif;background:var(--white);outline:none;cursor:pointer;">
+          <option value="createdAt_desc">新しい順</option>
+          <option value="createdAt_asc">古い順</option>
+          <option value="responseCount_desc">回答数多い順</option>
+          <option value="title_asc">名前順</option>
+        </select>
+      </div>
+    </div>
+    <div class="forms-grid" id="formsGrid">
+      <div class="empty-card"><p style="font-size:.82rem;">読み込み中...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="if(event.target===this)closeDrawer()">
+  <div class="drawer">
+    <div class="dr-hero">
+      <div class="dr-color-bar" id="drColorBar"></div>
+      <div class="dr-info">
+        <div class="dr-title" id="drTitle">—</div>
+        <div class="dr-meta" id="drMeta"></div>
+      </div>
+      <button class="dr-close" title="編集" onclick="toggleArchiveCurrent()" style="margin-right:2px;" id="drArchiveBtn">📦</button>
+      <button class="dr-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="dr-stats">
+      <div class="dr-stat"><div class="dr-stat-v" id="drS0">—</div><div class="dr-stat-l">回答数</div></div>
+      <div class="dr-stat"><div class="dr-stat-v" id="drS1">—</div><div class="dr-stat-l">質問数</div></div>
+      <div class="dr-stat"><div class="dr-stat-v" id="drS2">—</div><div class="dr-stat-l">ステータス</div></div>
+      <div class="dr-stat"><div class="dr-stat-v" id="drS3" style="font-size:.82rem;">—</div><div class="dr-stat-l">作成日</div></div>
+    </div>
+    <div class="dr-tabs">
+      <button class="dr-tab on" data-tab="share" onclick="drTab('share',this)">🔗 共有</button>
+      <button class="dr-tab" data-tab="res" onclick="drTab('res',this)">💬 回答</button>
+      <button class="dr-tab" data-tab="chart" onclick="drTab('chart',this)">📊 集計</button>
+      <button class="dr-tab" data-tab="trend" onclick="drTab('trend',this)">📈 トレンド</button>
+      <button class="dr-tab" data-tab="cal" onclick="drTab('cal',this)">📅 カレンダー</button>
+      <button class="dr-tab" data-tab="settings" onclick="drTab('settings',this)">⚙️ 設定</button>
+    </div>
+    <div class="dr-body">
+      <!-- 共有 -->
+      <div id="tabShare">
+        <div class="url-row">
+          <div class="url-box" id="drUrl">—</div>
+          <button class="btn-copy" onclick="cpUrl()">📋 コピー</button>
+        </div>
+        <div class="action-grid">
+          <a id="drOpenLink" href="#" target="_blank" class="action-tile"><span class="ai">🔗</span><span class="at">フォームを開く</span></a>
+          <a id="drEditLink" href="#" class="action-tile"><span class="ai">✏️</span><span class="at">編集</span></a>
+          <div class="action-tile" onclick="duplicateForm()"><span class="ai">📋</span><span class="at">複製</span></div>
+          <div class="action-tile" onclick="dlQr()"><span class="ai">⬇️</span><span class="at">QRを保存</span></div>
+          <div class="action-tile" onclick="exportCSV()"><span class="ai">📥</span><span class="at">CSV出力</span></div>
+          <div class="action-tile" onclick="openPrintModal()"><span class="ai">🖨️</span><span class="at">回答を印刷</span></div>
+          <div class="action-tile" onclick="drTab('embed',document.querySelector('[onclick*=embed]'))"><span class="ai">🔗</span><span class="at">埋め込みコード</span></div>
+        </div>
+        <div class="qr-section">
+          <h4>QRコード</h4>
+          <div id="qrDivD"></div>
+          <div style="font-size:.7rem;color:var(--muted);">スマホのカメラでスキャン</div>
+        </div>
+        <!-- 埋め込みコード -->
+        <div style="margin-top:14px;">
+          <div style="font-size:.76rem;font-weight:700;color:var(--text);margin-bottom:7px;">🔗 埋め込みコード</div>
+          <div class="embed-box" id="embedCode"></div>
+          <button class="btn-copy" onclick="cpEmbed()" style="margin-top:7px;font-size:.72rem;padding:6px 12px;">📋 コードをコピー</button>
+        </div>
+      </div>
+      <!-- 回答 -->
+      <div id="tabRes" style="display:none;">
+        <div class="res-toolbar">
+          <div class="res-count" id="resCountLabel">—件</div>
+          <input class="res-search" type="text" placeholder="🔍 回答を検索..." oninput="filterResps(this.value)">
+          <select class="sort-sel" onchange="sortResps(this.value)">
+            <option value="new">新しい順</option>
+            <option value="old">古い順</option>
+          </select>
+          <select class="sort-sel" id="statusFilterSel" onchange="filterRespsByStatus(this.value)">
+            <option value="">全ステータス</option>
+            <option value="new">🟡 未対応</option>
+            <option value="done">🟢 対応済み</option>
+            <option value="flag">🔴 要確認</option>
+          </select>
+          <button class="btn-sm btn-p" onclick="exportCSV()" style="white-space:nowrap;font-size:.72rem;">📥 CSV</button>
+        </div>
+        <div id="rList"><p style="text-align:center;color:var(--muted);font-size:.82rem;padding:20px;">読み込み中...</p></div>
+      </div>
+      <!-- 集計 -->
+      <div id="tabChart" style="display:none;">
+        <div id="chartArea"><p style="text-align:center;color:var(--muted);font-size:.82rem;padding:20px;">読み込み中...</p></div>
+      </div>
+      <!-- トレンド -->
+      <div id="tabTrend" style="display:none;">
+        <div class="trend-card">
+          <div class="trend-title">📈 日別回答数（直近30日）</div>
+          <div class="trend-wrap"><canvas id="trendChart"></canvas></div>
+        </div>
+      </div>
+      <!-- カレンダー -->
+      <div id="tabCal" style="display:none;">
+        <div class="cal-nav">
+          <button class="cal-btn" onclick="calMove(-1)">◀</button>
+          <div class="cal-month" id="calMonth"></div>
+          <button class="cal-btn" onclick="calMove(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div id="calDetailArea"></div>
+      </div>
+      <!-- 設定 -->
+      <div id="tabSettings" style="display:none;">
+        <div class="settings-info" id="settingsInfo"></div>
+        <div class="tag-edit-area">
+          <div class="tag-edit-title">🏷️ タグ管理</div>
+          <div class="tag-edit-list" id="tagEditList"></div>
+          <div class="tag-add-row">
+            <input class="tag-input" id="tagInput" placeholder="新しいタグ..." maxlength="20" onkeydown="if(event.key==='Enter')addTag()">
+            <button class="btn-sm btn-p" onclick="addTag()" style="font-size:.74rem;">追加</button>
+          </div>
+        </div>
+        <!-- 通知メール設定 -->
+        <div style="margin-top:16px;">
+          <div class="tag-edit-title">📧 回答通知メール（EmailJS）</div>
+          <div style="font-size:.76rem;color:var(--muted);margin-bottom:8px;">新しい回答が届くとEmailJS経由で自動送信します。事前にナビの「🔌 連携設定」でEmailJSの認証情報を登録してください。</div>
+          <div style="display:flex;gap:6px;">
+            <input class="tag-input" id="notifyEmail" placeholder="通知先メールアドレス...">
+            <button class="btn-sm btn-p" onclick="saveNotifyEmail()" style="font-size:.74rem;">保存</button>
+          </div>
+          <div id="notifyEmailDisplay" style="font-size:.74rem;color:var(--p);margin-top:5px;font-weight:600;"></div>
+          <button class="btn-sm btn-g" onclick="sendTestEmail()" style="margin-top:8px;font-size:.72rem;">✉️ テスト送信</button>
+        </div>
+        <!-- Webhook通知 -->
+        <div style="margin-top:16px;">
+          <div class="tag-edit-title">🔔 Webhook通知（Slack/Discord等）</div>
+          <div style="font-size:.76rem;color:var(--muted);margin-bottom:8px;">回答が届くと指定URLへPOSTします（Slack Incoming Webhook / Discord Webhook対応）</div>
+          <div style="display:flex;gap:6px;">
+            <input class="tag-input" id="webhookUrl" placeholder="https://hooks.slack.com/...">
+            <button class="btn-sm btn-p" onclick="saveWebhookUrl()" style="font-size:.74rem;">保存</button>
+          </div>
+          <div id="webhookUrlDisplay" style="font-size:.74rem;color:var(--p);margin-top:5px;font-weight:600;"></div>
+        </div>
+        <!-- スパム対策トグル -->
+        <div class="toggle-row" onclick="toggleSpamProtect()">
+          <div>
+            <div class="sinfo-lbl">🛡️ スパム対策（ハニーポット）</div>
+            <div class="field-hint" style="margin-top:2px;">form.html側での実装が必要です。設定値のみ保存されます</div>
+          </div>
+          <div class="toggle-sw" id="spamToggle"></div>
+        </div>
+        <!-- 共同編集者 -->
+        <div class="tag-edit-area" id="editorsMgmtArea">
+          <div class="tag-edit-title">👥 共同編集者</div>
+          <div style="font-size:.76rem;color:var(--muted);margin-bottom:8px;">追加したメールアドレスでログイン中のユーザーはこのフォームを閲覧・編集できます（Firestoreセキュリティルールの設定が必要です）</div>
+          <div class="tag-edit-list" id="drEditorsList"></div>
+          <div class="tag-add-row" id="drEditorsAddRow">
+            <input class="tag-input" id="editorEmailInput" placeholder="編集者のメールアドレス...">
+            <button class="btn-sm btn-p" onclick="addEditorDash()" style="font-size:.74rem;">招待</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 削除確認 -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirmIcon">🗑️</div>
+    <div class="confirm-title" id="confirmTitle">削除しますか？</div>
+    <div class="confirm-sub" id="confirmSub"></div>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeConfirm()">キャンセル</button>
+      <button class="btn-del-confirm" id="confirmBtn">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 連携設定モーダル -->
+<div class="modal-overlay" id="integrationsModal" onclick="if(event.target===this)closeIntegrationsModal()">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-title">🔌 連携設定</div>
+      <button class="modal-close" onclick="closeIntegrationsModal()">✕</button>
+    </div>
+    <div class="modal-sub">アカウント単位の設定です。全フォーム共通で使用されます。</div>
+    <div class="field-group">
+      <label class="field-lbl">EmailJS Service ID</label>
+      <input class="field-input" id="cfgServiceId" placeholder="service_xxxxxxx">
+    </div>
+    <div class="field-group">
+      <label class="field-lbl">EmailJS Template ID</label>
+      <input class="field-input" id="cfgTemplateId" placeholder="template_xxxxxxx">
+      <div class="field-hint">テンプレート変数の例: {{to_email}} {{form_title}} {{response_count}} {{form_url}}</div>
+    </div>
+    <div class="field-group">
+      <label class="field-lbl">EmailJS Public Key</label>
+      <input class="field-input" id="cfgPublicKey" placeholder="公開キー">
+      <div class="field-hint">emailjs.com のダッシュボードから取得できます。この設定はブラウザ実行時にのみ使われ、ダッシュボードを開いている間のリアルタイム検知でメール送信します。</div>
+    </div>
+    <button class="btn-sm btn-p" onclick="saveIntegrationSettings()" style="width:100%;justify-content:center;padding:9px;font-size:.8rem;">保存する</button>
+  </div>
+</div>
+
+<!-- 印刷スタイル選択モーダル -->
+<div class="modal-overlay" id="printModal" onclick="if(event.target===this)closePrintModal()">
+  <div class="modal-box" style="max-width:380px;">
+    <div class="modal-hdr">
+      <div class="modal-title">🖨️ 回答を印刷</div>
+      <button class="modal-close" onclick="closePrintModal()">✕</button>
+    </div>
+    <div class="modal-sub">出力形式を選んでください（現在の検索・絞り込み結果が対象です）</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn-sm btn-g" style="justify-content:flex-start;padding:11px 13px;width:100%;" onclick="printResponses('card')">📇 カード形式（1件ずつ詳細・画像プレビュー付き）</button>
+      <button class="btn-sm btn-g" style="justify-content:flex-start;padding:11px 13px;width:100%;" onclick="printResponses('table')">📊 表形式（一覧・比較しやすい）</button>
+      <button class="btn-sm btn-g" style="justify-content:flex-start;padding:11px 13px;width:100%;" onclick="printResponses('summary')">📈 集計サマリー付き（グラフ＋表）</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="printArea" style="display:none;"></div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyDarChAwm9_4t4CRfPiM5dVI84MjQPe5ms",
+  authDomain:"senkyo-29a84.firebaseapp.com",
+  projectId:"senkyo-29a84",
+  storageBucket:"senkyo-29a84.firebasestorage.app",
+  messagingSenderId:"734912107336",
+  appId:"1:734912107336:web:b57350fc64038f7611997d"
+});
+var db=firebase.firestore(), auth=firebase.auth();
+var user=null, forms=[], filteredForms=[], curForm=null, resps=[], filteredResps=[], chartInsts=[];
+var calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+var activeTag='', trendChartInst=null;
+var rtUnsubscribe=null; // リアルタイム購読解除用
+var editorRtUnsubscribe=null; // 共同編集フォームのリアルタイム購読解除用
+var ownedFormsRaw=[], sharedFormsRaw=[];
+var selectedFormIds=new Set();
+var prevCounts={}; // フォームID -> 直前の回答数（新着検知用）
+var integSettings={serviceId:'',templateId:'',publicKey:''};
+var showArchived=false;
+var statusFilter='';
+
+auth.onAuthStateChanged(async function(u){
+  if(!u){location.href='index.html';return;}
+  user=u;
+  var name=u.displayName||(u.email&&u.email.split('@')[0])||'ユーザー';
+  document.getElementById('uname').textContent=name;
+  document.getElementById('uav').textContent=name[0].toUpperCase();
+  document.getElementById('heroGreet').textContent='こんにちは、'+name.split(/[\s@]/)[0]+' 👋';
+  await loadIntegrationSettings();
+  setupRealtimeListener();
+});
+
+// ===== ユーティリティ =====
+function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function isImageUrl(u){
+  if(!u)return false;
+  if(/\/image\/upload\//.test(u))return true; // Cloudinaryの画像リソース
+  return /\.(jpe?g|png|gif|webp|svg|bmp)(\?.*)?$/i.test(u);
+}
+function formStatus(f){
+  if(f.archived)return 'archived';
+  var st=f.settings||{}, now=new Date();
+  if(st.publishAt&&new Date(st.publishAt)>now)return 'pre';
+  if(st.deadline&&new Date(st.deadline)<now)return 'closed';
+  if(st.capacity&&(f.responseCount||0)>=parseInt(st.capacity))return 'closed';
+  return 'active';
+}
+var STATUS_LABEL={active:'🟢 公開中',closed:'🔴 終了',pre:'🟡 公開前',archived:'📦 アーカイブ'};
+var STATUS_CLS={active:'b-on',closed:'b-off',pre:'b-pre',archived:'b-arc'};
+function qL(q){return q.l||q.label||'';}
+function qT(q){return q.t||q.type||'short';}
+function getAllQ(f){
+  if(f.sections){var qs=[];f.sections.forEach(function(s){s.questions.forEach(function(q){qs.push(q);});});return qs;}
+  return f.questions||[];
+}
+
+// ===== 連携設定（EmailJS / Webhook） =====
+async function loadIntegrationSettings(){
+  try{
+    var doc=await db.collection('userSettings').doc(user.uid).get();
+    if(doc.exists){
+      var d=doc.data();
+      integSettings.serviceId=d.emailjsServiceId||'';
+      integSettings.templateId=d.emailjsTemplateId||'';
+      integSettings.publicKey=d.emailjsPublicKey||'';
+      if(integSettings.publicKey&&window.emailjs){
+        try{emailjs.init({publicKey:integSettings.publicKey});}catch(ex){console.warn('emailjs init failed',ex);}
+      }
+    }
+  }catch(ex){console.warn('連携設定の読み込みに失敗',ex);}
+  document.getElementById('cfgServiceId').value=integSettings.serviceId;
+  document.getElementById('cfgTemplateId').value=integSettings.templateId;
+  document.getElementById('cfgPublicKey').value=integSettings.publicKey;
+}
+function openIntegrationsModal(){document.getElementById('integrationsModal').classList.add('open');}
+function closeIntegrationsModal(){document.getElementById('integrationsModal').classList.remove('open');}
+async function saveIntegrationSettings(){
+  integSettings.serviceId=document.getElementById('cfgServiceId').value.trim();
+  integSettings.templateId=document.getElementById('cfgTemplateId').value.trim();
+  integSettings.publicKey=document.getElementById('cfgPublicKey').value.trim();
+  try{
+    await db.collection('userSettings').doc(user.uid).set({
+      emailjsServiceId:integSettings.serviceId,
+      emailjsTemplateId:integSettings.templateId,
+      emailjsPublicKey:integSettings.publicKey,
+      updatedAt:new Date().toISOString()
+    },{merge:true});
+    if(integSettings.publicKey&&window.emailjs){
+      try{emailjs.init({publicKey:integSettings.publicKey});}catch(ex){}
+    }
+    showToast('✅ 連携設定を保存しました');
+    closeIntegrationsModal();
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+async function sendNotificationEmail(toEmail,form,extra){
+  if(!toEmail||!integSettings.serviceId||!integSettings.templateId||!integSettings.publicKey){
+    console.warn('EmailJS未設定のため通知メールをスキップしました');
+    return false;
+  }
+  try{
+    var base=location.href.replace(/dashboard\.html.*/,'');
+    await emailjs.send(integSettings.serviceId,integSettings.templateId,{
+      to_email:toEmail,
+      form_title:form.title||'無題のフォーム',
+      response_count:form.responseCount||0,
+      form_url:base+'form.html?id='+form.id
+    });
+    return true;
+  }catch(ex){
+    console.error('EmailJS送信エラー',ex);
+    showToast('❌ メール通知の送信に失敗しました');
+    return false;
+  }
+}
+async function sendWebhookNotification(url,form){
+  if(!url)return;
+  try{
+    var base=location.href.replace(/dashboard\.html.*/,'');
+    await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:'📩 新しい回答: 「'+(form.title||'無題のフォーム')+'」現在 '+(form.responseCount||0)+' 件（'+base+'form.html?id='+form.id+'）'})
+    });
+  }catch(ex){console.warn('Webhook送信エラー',ex);}
+}
+async function sendTestEmail(){
+  if(!curForm)return;
+  var to=document.getElementById('notifyEmail').value.trim();
+  if(!to){showToast('通知先メールアドレスを入力してください');return;}
+  showToast('✉️ 送信中...');
+  var ok=await sendNotificationEmail(to,curForm);
+  if(ok)showToast('✅ テストメールを送信しました');
+}
+
+// ===== リアルタイム購読 =====
+function mergeFormSources(){
+  var map={};
+  ownedFormsRaw.forEach(function(f){map[f.id]=Object.assign({},f,{isOwner:true});});
+  sharedFormsRaw.forEach(function(f){if(!map[f.id])map[f.id]=Object.assign({},f,{isOwner:false});});
+  var newForms=Object.keys(map).map(function(k){return map[k];});
+  // 新着回答の検知（通知トリガー）
+  newForms.forEach(function(f){
+    var prev=prevCounts[f.id];
+    var cur=f.responseCount||0;
+    if(prev!==undefined&&cur>prev){
+      if(f.notifyEmail)sendNotificationEmail(f.notifyEmail,f);
+      if(f.webhookUrl)sendWebhookNotification(f.webhookUrl,f);
+    }
+    prevCounts[f.id]=cur;
+  });
+  forms=newForms;
+  forms.sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  applyFilters();
+  renderStats();
+  renderTagBar();
+  // 開いているドロワーのリアルタイム更新
+  if(curForm){
+    var updated=forms.find(function(f){return f.id===curForm.id;});
+    if(updated){curForm=updated;document.getElementById('drS0').textContent=curForm.responseCount||0;}
+  }
+}
+function setupRealtimeListener(){
+  if(rtUnsubscribe)rtUnsubscribe();
+  if(editorRtUnsubscribe)editorRtUnsubscribe();
+  rtUnsubscribe=db.collection('forms').where('userId','==',user.uid).onSnapshot(function(snap){
+    ownedFormsRaw=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    mergeFormSources();
+  },function(err){console.error('RT error:',err);});
+  // 共同編集者として招待されているフォーム（自分のメールアドレスがeditorsに含まれるもの）
+  if(user.email){
+    editorRtUnsubscribe=db.collection('forms').where('editors','array-contains',user.email).onSnapshot(function(snap){
+      sharedFormsRaw=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+      mergeFormSources();
+    },function(err){console.warn('共同編集フォームの取得に失敗しました（Firestoreセキュリティルールの確認が必要な場合があります）:',err);});
+  }
+}
+
+// ===== フィルター・ソート =====
+function applyFilters(){
+  var q=(document.getElementById('searchInput').value||'').toLowerCase();
+  filteredForms=forms.filter(function(f){
+    var tagMatch=!activeTag||((f.tags||[]).includes(activeTag));
+    var qMatch=!q||(f.title||'').toLowerCase().includes(q)||(f.description||'').toLowerCase().includes(q);
+    var archMatch=showArchived?!!f.archived:!f.archived;
+    return tagMatch&&qMatch&&archMatch;
+  });
+  var sv=document.getElementById('sortSel').value;
+  sortByKey(filteredForms,sv);
+  document.getElementById('formsTitle').textContent=(showArchived?'アーカイブ済み':'マイフォーム')+'（'+filteredForms.length+'件）';
+  renderGrid();
+}
+function filterForms(q){applyFilters();}
+function sortForms(sv){applyFilters();}
+function sortByKey(arr,sv){
+  if(sv==='createdAt_desc')arr.sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  else if(sv==='createdAt_asc')arr.sort(function(a,b){return (a.createdAt||'').localeCompare(b.createdAt||'');});
+  else if(sv==='responseCount_desc')arr.sort(function(a,b){return (b.responseCount||0)-(a.responseCount||0);});
+  else if(sv==='title_asc')arr.sort(function(a,b){return (a.title||'').localeCompare(b.title||'','ja');});
+}
+function filterByTag(el){
+  document.querySelectorAll('.tag-pill').forEach(function(x){x.classList.remove('on');});
+  el.classList.add('on');
+  var tag=el.dataset.tag;
+  if(tag==='__archived__'){
+    showArchived=true;activeTag='';
+  } else {
+    showArchived=false;activeTag=tag;
+  }
+  applyFilters();
+}
+
+// ===== タグ =====
+function getAllTags(){
+  var tags={};forms.forEach(function(f){(f.tags||[]).forEach(function(t){tags[t]=true;});});
+  return Object.keys(tags);
+}
+function renderTagBar(){
+  var tags=getAllTags();
+  var archivedCount=forms.filter(function(f){return f.archived;}).length;
+  var bar=document.getElementById('tagBar');
+  bar.innerHTML='<div class="tag-pill'+(!showArchived&&activeTag===''?' on':'')+'" data-tag="" onclick="filterByTag(this)">すべて</div>';
+  tags.forEach(function(t){
+    bar.innerHTML+='<div class="tag-pill'+(!showArchived&&activeTag===t?' on':'')+'" data-tag="'+e(t)+'" onclick="filterByTag(this)">'+e(t)+'</div>';
+  });
+  bar.innerHTML+='<div class="tag-pill'+(showArchived?' on':'')+'" data-tag="__archived__" onclick="filterByTag(this)">📦 アーカイブ（'+archivedCount+'）</div>';
+}
+
+// ===== 統計 =====
+function renderStats(){
+  var activeForms=forms.filter(function(f){return !f.archived;});
+  document.getElementById('sv0').textContent=activeForms.length;
+  var total=activeForms.reduce(function(s,f){return s+(f.responseCount||0);},0);
+  document.getElementById('sv1').textContent=total;
+  document.getElementById('sv2').textContent=activeForms.filter(function(f){return formStatus(f)==='active';}).length;
+  document.getElementById('sv3').textContent=activeForms.length?Math.round(total/activeForms.length):0;
+  document.getElementById('sc0').textContent=activeForms.filter(function(f){return formStatus(f)==='active';}).length+'件公開中';
+  document.getElementById('sc1').textContent='最新: '+(activeForms.length&&activeForms[0].createdAt?new Date(activeForms[0].createdAt).toLocaleDateString('ja-JP'):'—');
+  document.getElementById('sc2').textContent='終了 '+activeForms.filter(function(f){return formStatus(f)==='closed';}).length+'件';
+}
+
+// ===== フォームグリッド =====
+function renderGrid(){
+  var g=document.getElementById('formsGrid');
+  if(!filteredForms.length){
+    g.innerHTML=forms.length?'<div class="empty-card"><p style="font-size:.82rem;">🔍 該当なし</p></div>'
+      :'<div class="empty-card" style="grid-column:1/-1"><p style="margin-bottom:14px;font-size:.88rem;">まだフォームがありません</p><a href="builder.html" class="btn-sm btn-p" style="text-decoration:none;">最初のフォームを作る</a></div>';
+    return;
+  }
+  g.innerHTML=filteredForms.map(function(f){
+    var col=f.themeColor||'#6C63FF';
+    var st=formStatus(f);
+    var date=f.createdAt?new Date(f.createdAt).toLocaleDateString('ja-JP'):'—';
+    var qs=getAllQ(f).filter(function(q){return qT(q)!=='section';});
+    var tags=(f.tags||[]).map(function(t){return '<span class="fc-tag">'+e(t)+'</span>';}).join('');
+    var selected=selectedFormIds.has(f.id);
+    return '<div class="form-card'+(selected?' selected':'')+'" onclick="openDrawer(\''+f.id+'\')">'
+      +'<div class="fc-check'+(selected?' on':'')+'" onclick="event.stopPropagation();toggleSelect(\''+f.id+'\')">'+(selected?'✓':'')+'</div>'
+      +'<div class="fc-top" style="background:'+col+'"></div>'
+      +'<div class="fc-body">'
+        +'<div class="fc-name">'+e(f.title||'無題のフォーム')+'</div>'
+        +'<div class="fc-desc">'+e(f.description||'説明なし')+'</div>'
+        +(tags?'<div class="fc-tags">'+tags+'</div>':'')
+        +'<div class="fc-meta"><span class="badge '+STATUS_CLS[st]+'">'+STATUS_LABEL[st]+'</span>'
+          +(f.isOwner===false?'<span class="badge" style="background:rgba(0,180,216,.12);color:#0089A8;">👥 共同編集</span>':'')
+          +'<span style="font-size:.66rem;color:var(--muted);">Q'+qs.length+'問</span>'
+          +'<span style="font-size:.66rem;color:var(--muted);">'+date+'</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="fc-foot">'
+        +'<div class="fc-count"><span style="font-size:.96rem;font-weight:700;color:var(--text);">'+(f.responseCount||0)+'</span> 回答</div>'
+        +'<div class="fc-acts">'
+          +'<a href="form.html?id='+f.id+'" target="_blank" class="fact" title="開く" onclick="event.stopPropagation()">👁</a>'
+          +'<a href="builder.html?id='+f.id+'" class="fact" title="編集" onclick="event.stopPropagation()">✏️</a>'
+          +'<div class="fact" title="複製" onclick="event.stopPropagation();curForm=forms.find(function(x){return x.id===\''+f.id+'\';});duplicateForm()">📋</div>'
+          +'<div class="fact" title="'+(f.archived?'復元':'アーカイブ')+'" onclick="event.stopPropagation();toggleArchive(\''+f.id+'\')">'+(f.archived?'📤':'📦')+'</div>'
+          +(f.isOwner===false?'':'<div class="fact del" title="削除" onclick="event.stopPropagation();confirmDel(\''+f.id+'\',\'form\')">🗑</div>')
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+// ===== 一括選択・一括操作 =====
+function toggleSelect(fid){
+  if(selectedFormIds.has(fid))selectedFormIds.delete(fid);else selectedFormIds.add(fid);
+  renderGrid();updateBulkBar();
+}
+function clearSelection(){selectedFormIds.clear();renderGrid();updateBulkBar();}
+function updateBulkBar(){
+  var bar=document.getElementById('bulkBar');
+  var n=selectedFormIds.size;
+  bar.classList.toggle('show',n>0);
+  document.getElementById('bulkCount').textContent=n+'件選択中';
+}
+async function bulkArchive(archived){
+  if(!selectedFormIds.size)return;
+  var ids=Array.from(selectedFormIds);
+  showToast('処理中...');
+  try{
+    await Promise.all(ids.map(function(id){return db.collection('forms').doc(id).update({archived:archived});}));
+    showToast(archived?'📦 アーカイブしました':'📤 復元しました');
+    clearSelection();
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+function bulkTagPrompt(){
+  if(!selectedFormIds.size)return;
+  var tag=prompt('選択した'+selectedFormIds.size+'件に追加するタグ名を入力してください');
+  if(!tag||!tag.trim())return;
+  bulkTag(tag.trim());
+}
+async function bulkTag(tag){
+  var ids=Array.from(selectedFormIds);
+  showToast('タグ付け中...');
+  try{
+    await Promise.all(ids.map(function(id){
+      var f=forms.find(function(x){return x.id===id;});
+      var tags=(f&&f.tags)||[];
+      if(!tags.includes(tag))tags=tags.concat([tag]);
+      return db.collection('forms').doc(id).update({tags:tags});
+    }));
+    showToast('✅ タグを追加しました');
+    clearSelection();
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+function bulkExportCSV(){
+  if(!selectedFormIds.size)return;
+  var target=forms.filter(function(f){return selectedFormIds.has(f.id);});
+  var csv=[['ID','タイトル','回答数','ステータス','タグ','作成日']].concat(target.map(function(f){
+    return [f.id,f.title||'',f.responseCount||0,formStatus(f),(f.tags||[]).join('|'),f.createdAt||''];
+  })).map(function(r){return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));a.download='formly_selected.csv';a.click();
+}
+function bulkDeletePrompt(){
+  if(!selectedFormIds.size)return;
+  var ids=Array.from(selectedFormIds);
+  var deletable=ids.filter(function(id){var f=forms.find(function(x){return x.id===id;});return !f||f.isOwner!==false;});
+  var skipped=ids.length-deletable.length;
+  if(!deletable.length){showToast('オーナーではないため削除できません');return;}
+  document.getElementById('confirmIcon').textContent='🗑️';
+  document.getElementById('confirmTitle').textContent=deletable.length+'件を削除';
+  document.getElementById('confirmSub').textContent='選択した'+deletable.length+'件のフォームを削除します。回答データは残ります。元に戻せません。'+(skipped?'（オーナーではない'+skipped+'件はスキップされます）':'');
+  document.getElementById('confirmBtn').textContent='削除する';
+  document.getElementById('confirmBtn').onclick=function(){execBulkDelete();closeConfirm();};
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+async function execBulkDelete(){
+  var ids=Array.from(selectedFormIds).filter(function(id){var f=forms.find(function(x){return x.id===id;});return !f||f.isOwner!==false;});
+  showToast('削除中...');
+  try{
+    await Promise.all(ids.map(function(id){return db.collection('forms').doc(id).delete();}));
+    showToast('🗑 '+ids.length+'件削除しました');
+    clearSelection();
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+async function toggleArchive(fid){
+  var f=forms.find(function(x){return x.id===fid;});
+  if(!f)return;
+  try{
+    await db.collection('forms').doc(fid).update({archived:!f.archived});
+    showToast(!f.archived?'📦 アーカイブしました':'📤 復元しました');
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+async function toggleArchiveCurrent(){
+  if(!curForm)return;
+  await toggleArchive(curForm.id);
+  curForm.archived=!curForm.archived;
+}
+
+// ===== DRAWER =====
+async function openDrawer(fid){
+  curForm=forms.find(function(f){return f.id===fid;});
+  if(!curForm)return;
+  var col=curForm.themeColor||'#6C63FF';
+  document.getElementById('drColorBar').style.background=col;
+  document.getElementById('drTitle').textContent=curForm.title||'無題';
+  var st=formStatus(curForm);
+  var qs=getAllQ(curForm).filter(function(q){return qT(q)!=='section';});
+  document.getElementById('drMeta').innerHTML='<span class="badge '+STATUS_CLS[st]+'">'+STATUS_LABEL[st]+'</span>'
+    +(curForm.isOwner===false?'<span class="badge" style="background:rgba(0,180,216,.18);color:#8FE3F5;">👥 共同編集</span>':'')
+    +'<span>Q'+qs.length+'問</span>'
+    +(curForm.createdAt?'<span>'+new Date(curForm.createdAt).toLocaleDateString('ja-JP')+'</span>':'');
+  document.getElementById('drS0').textContent=curForm.responseCount||0;
+  document.getElementById('drS1').textContent=qs.length;
+  var stLbl={active:'公開中',closed:'終了',pre:'公開前',archived:'アーカイブ'};
+  document.getElementById('drS2').textContent=stLbl[st]||'—';
+  document.getElementById('drS3').textContent=curForm.createdAt?new Date(curForm.createdAt).toLocaleDateString('ja-JP'):'—';
+  document.getElementById('drArchiveBtn').textContent=curForm.archived?'📤':'📦';
+  // URL & QR
+  var base=location.href.replace(/dashboard\.html.*/,'');
+  var url=base+'form.html?id='+fid;
+  document.getElementById('drUrl').textContent=url;
+  document.getElementById('drOpenLink').href=url;
+  document.getElementById('drEditLink').href=base+'builder.html?id='+fid;
+  // QR
+  var qrDiv=document.getElementById('qrDivD');qrDiv.innerHTML='';
+  new QRCode(qrDiv,{text:url,width:140,height:140,colorDark:'#1A1A2E',colorLight:'#F8F9FF',correctLevel:QRCode.CorrectLevel.M});
+  // 埋め込みコード
+  document.getElementById('embedCode').textContent='<iframe src="'+url+'&embed=1" width="100%" height="600" frameborder="0" allow="fullscreen"></iframe>';
+  // 設定タブ
+  renderSettingsTab(curForm);
+  // 通知メール
+  document.getElementById('notifyEmail').value=curForm.notifyEmail||'';
+  document.getElementById('notifyEmailDisplay').textContent=curForm.notifyEmail?'現在の通知先: '+curForm.notifyEmail:'';
+  document.getElementById('webhookUrl').value=curForm.webhookUrl||'';
+  document.getElementById('webhookUrlDisplay').textContent=curForm.webhookUrl?'現在のWebhook: '+curForm.webhookUrl:'';
+  document.getElementById('spamToggle').classList.toggle('on',!!curForm.spamProtect);
+  // open
+  document.getElementById('drawerOverlay').classList.add('open');
+  drTab('share',document.querySelector('.dr-tab'));
+  // 回答を非同期取得
+  resps=[];filteredResps=[];statusFilter='';
+  document.getElementById('resCountLabel').textContent='取得中...';
+  document.getElementById('rList').innerHTML='<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:20px;">取得中...</p>';
+  try{
+    var snap=await db.collection('responses').where('formId','==',fid).orderBy('submittedAt','desc').get();
+    resps=snap.docs.map(function(d){return Object.assign({_id:d.id},d.data());});
+    filteredResps=resps.slice();
+    document.getElementById('resCountLabel').textContent=resps.length+'件の回答';
+    renderResps();
+  }catch(ex){
+    document.getElementById('rList').innerHTML='<p style="color:var(--coral);font-size:.8rem;padding:12px;">取得エラー: '+e(ex.message)+'</p>';
+  }
+}
+
+function closeDrawer(){
+  document.getElementById('drawerOverlay').classList.remove('open');
+  chartInsts.forEach(function(c){c.destroy();});chartInsts=[];
+  if(trendChartInst){trendChartInst.destroy();trendChartInst=null;}
+}
+
+function drTab(t,el){
+  document.querySelectorAll('.dr-tab').forEach(function(x){x.classList.remove('on');});
+  var btn=el||document.querySelector('.dr-tab[data-tab="'+t+'"]');
+  if(btn)btn.classList.add('on');
+  ['Share','Res','Chart','Trend','Cal','Settings'].forEach(function(n){
+    document.getElementById('tab'+n).style.display='none';
+  });
+  var map={share:'Share',res:'Res',chart:'Chart',trend:'Trend',cal:'Cal',settings:'Settings'};
+  var show=map[t];if(show)document.getElementById('tab'+show).style.display='block';
+  if(t==='chart')renderCharts();
+  if(t==='trend')renderTrend();
+  if(t==='cal')renderCal();
+  if(t==='settings')renderSettingsTab(curForm);
+}
+
+// ===== 回答リスト =====
+function renderResps(){
+  var qs=getAllQ(curForm).filter(function(q){return qT(q)!=='section';});
+  document.getElementById('resCountLabel').textContent=filteredResps.length+(filteredResps.length!==resps.length?'/'+resps.length:'')+'件';
+  if(!filteredResps.length){
+    document.getElementById('rList').innerHTML='<p style="text-align:center;padding:24px;color:var(--muted);font-size:.82rem;">'+(resps.length?'検索結果なし':'まだ回答がありません')+'</p>';
+    return;
+  }
+  var stLabels={new:'🟡 未対応',done:'🟢 対応済み',flag:'🔴 要確認'};
+  document.getElementById('rList').innerHTML='<div class="rlist">'+filteredResps.map(function(r,i){
+    var fields=qs.map(function(q){
+      var v=r.answers&&r.answers[q.id];
+      var disp=v==null?'—':Array.isArray(v)?v.join('、'):String(v)||'—';
+      // 2カラムの場合
+      if(r.answers&&r.answers[q.id+'_L']!==undefined){
+        disp=(r.answers[q.id+'_L']||'')+'　'+(r.answers[q.id+'_R']||'');
+      }
+      // ファイルアップロード（Cloudinary URL）の場合はリンク／画像プレビュー表示
+      if(qT(q)==='file'&&v){
+        var fname=(r.answers&&r.answers[q.id+'_fname'])||'ファイルを開く';
+        if(isImageUrl(v)){
+          return '<div class="rfield"><span class="rfield-label">'+e(qL(q))+'</span><div class="rfield-val">'
+            +'<a href="'+e(v)+'" target="_blank"><img src="'+e(v)+'" alt="'+e(fname)+'" loading="lazy" style="max-width:150px;max-height:150px;border-radius:8px;border:1.5px solid var(--border);margin-top:4px;display:block;object-fit:cover;"></a>'
+            +'<div style="font-size:.68rem;color:var(--muted);margin-top:3px;">'+e(fname)+'</div>'
+          +'</div></div>';
+        }
+        return '<div class="rfield"><span class="rfield-label">'+e(qL(q))+'</span><div class="rfield-val">📎 <a href="'+e(v)+'" target="_blank" style="color:var(--p);font-weight:600;">'+e(fname)+'</a></div></div>';
+      }
+      return '<div class="rfield"><span class="rfield-label">'+e(qL(q))+'</span><div class="rfield-val">'+e(disp)+'</div></div>';
+    }).join('');
+    var status=r.status||'new';
+    return '<div class="rcard" id="rc_'+i+'">'
+      +'<div class="rcard-head" onclick="toggleCard('+i+')">'
+        +'<span class="rcard-num">#'+(resps.indexOf(r)+1)+'</span>'
+        +'<span class="rcard-time">'+(r.submittedAt?new Date(r.submittedAt).toLocaleString('ja-JP'):'—')+'</span>'
+        +'<select class="rstatus-sel st-'+status+'" onclick="event.stopPropagation()" onchange="event.stopPropagation();updateRespStatus(\''+r._id+'\',this.value,this)">'
+          +'<option value="new"'+(status==='new'?' selected':'')+'>🟡 未対応</option>'
+          +'<option value="done"'+(status==='done'?' selected':'')+'>🟢 対応済み</option>'
+          +'<option value="flag"'+(status==='flag'?' selected':'')+'>🔴 要確認</option>'
+        +'</select>'
+        +'<button class="rcard-del" onclick="event.stopPropagation();confirmDel(\''+r._id+'\',\'response\','+i+')" title="削除">🗑</button>'
+        +'<span style="font-size:.68rem;color:var(--muted);">▼</span>'
+      +'</div>'
+      +'<div class="rcard-body">'+fields
+        +'<textarea class="rmemo" placeholder="内部メモ（自分だけに表示）..." onclick="event.stopPropagation()" onchange="updateRespMemo(\''+r._id+'\',this.value)">'+e(r.memo||'')+'</textarea>'
+      +'</div>'
+    +'</div>';
+  }).join('')+'</div>';
+}
+function toggleCard(i){var el=document.getElementById('rc_'+i);if(el)el.classList.toggle('open');}
+
+function filterResps(q){
+  q=(q||'').toLowerCase().trim();
+  applyRespFilters(q,null);
+}
+var lastRespSearch='';
+function applyRespFilters(searchVal,statusVal){
+  if(searchVal!==null)lastRespSearch=searchVal;
+  if(statusVal!==null)statusFilter=statusVal;
+  filteredResps=resps.filter(function(r){
+    var qMatch=!lastRespSearch||Object.values(r.answers||{}).some(function(v){return String(Array.isArray(v)?v.join(' '):v||'').toLowerCase().includes(lastRespSearch);});
+    var sMatch=!statusFilter||(r.status||'new')===statusFilter;
+    return qMatch&&sMatch;
+  });
+  renderResps();
+}
+function filterRespsByStatus(v){applyRespFilters(null,v);}
+function sortResps(sv){
+  filteredResps.sort(function(a,b){
+    return sv==='new'?(b.submittedAt||'').localeCompare(a.submittedAt||''):(a.submittedAt||'').localeCompare(b.submittedAt||'');
+  });
+  renderResps();
+}
+async function updateRespStatus(rid,status,el){
+  el.className='rstatus-sel st-'+status;
+  var r=resps.find(function(x){return x._id===rid;});if(r)r.status=status;
+  try{await db.collection('responses').doc(rid).update({status:status});}catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+async function updateRespMemo(rid,memo){
+  var r=resps.find(function(x){return x._id===rid;});if(r)r.memo=memo;
+  try{await db.collection('responses').doc(rid).update({memo:memo});showToast('📝 メモを保存しました');}catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+
+// ===== 集計チャート =====
+function renderCharts(){
+  chartInsts.forEach(function(c){c.destroy();});chartInsts=[];
+  var qs=getAllQ(curForm).filter(function(q){return qT(q)!=='section';});
+  var area=document.getElementById('chartArea');
+  if(!qs.length){area.innerHTML='<p style="color:var(--muted);font-size:.82rem;text-align:center;padding:24px;">質問がありません</p>';return;}
+  var xtabEligible=qs.filter(function(q){return ['radio','select','checkbox','rating'].includes(qT(q));});
+  var html='<div class="chart-grid">';
+  qs.forEach(function(q){
+    var type=qT(q);
+    if(['radio','select','checkbox','rating'].includes(type)){
+      html+='<div class="chart-card"><div class="chart-title" title="'+e(qL(q))+'"><span>'+e(qL(q))+'</span><span id="avg_'+q.id+'"></span></div><div class="chart-wrap"><canvas id="ch_'+q.id+'"></canvas></div></div>';
+    } else {
+      html+='<div class="chart-card"><div class="chart-title" title="'+e(qL(q))+'">'+e(qL(q))+'</div><ul class="text-ans-list" id="tl_'+q.id+'"></ul></div>';
+    }
+  });
+  if(xtabEligible.length>=2){
+    var selOpts=xtabEligible.map(function(q){return '<option value="'+q.id+'">'+e(qL(q))+'</option>';}).join('');
+    html+='<div class="chart-card" style="grid-column:1/-1;">'
+      +'<div class="chart-title">🔀 クロス集計</div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">'
+        +'<select id="xtabQ1" class="sort-sel">'+selOpts+'</select>'
+        +'<span style="font-size:.8rem;color:var(--muted);">×</span>'
+        +'<select id="xtabQ2" class="sort-sel">'+selOpts+'</select>'
+        +'<button class="btn-sm btn-p" onclick="renderCrossTab()" style="font-size:.72rem;">集計する</button>'
+      +'</div>'
+      +'<div id="xtabResult" style="font-size:.76rem;color:var(--muted);">2つの質問を選んで「集計する」を押してください</div>'
+    +'</div>';
+  }
+  html+='</div>';
+  area.innerHTML=html;
+  if(xtabEligible.length>=2){
+    var sel2=document.getElementById('xtabQ2');
+    if(sel2&&sel2.options.length>1)sel2.selectedIndex=1; // デフォルトで異なる質問を選択
+  }
+  qs.forEach(function(q){
+    var type=qT(q);
+    if(['radio','select','checkbox','rating'].includes(type)){
+      var counts={};
+      var ratingSum=0,ratingN=0;
+      resps.forEach(function(r){
+        var v=r.answers&&r.answers[q.id];
+        if(Array.isArray(v))v.forEach(function(x){counts[x]=(counts[x]||0)+1;});
+        else if(v!=null&&v!=='')counts[String(v)]=(counts[String(v)]||0)+1;
+        if(type==='rating'&&v!=null&&v!==''&&!isNaN(parseFloat(v))){ratingSum+=parseFloat(v);ratingN++;}
+      });
+      if(type==='rating'&&ratingN){
+        var avgEl=document.getElementById('avg_'+q.id);
+        if(avgEl)avgEl.innerHTML='<span class="chart-avg">平均 '+(ratingSum/ratingN).toFixed(2)+'</span>';
+      }
+      var labels=Object.keys(counts),data=Object.values(counts);
+      var ctx=document.getElementById('ch_'+q.id);if(!ctx)return;
+      if(!labels.length){ctx.parentElement.innerHTML+='<p style="font-size:.73rem;color:var(--muted);text-align:center;">データなし</p>';return;}
+      var colors=['#6C63FF','#FF6584','#FEC02F','#06D6A0','#00B4D8','#F77F00'].slice(0,labels.length);
+      var isBar=type==='rating';
+      var ch=new Chart(ctx.getContext('2d'),{
+        type:isBar?'bar':'doughnut',
+        data:{labels:labels,datasets:[{data:data,backgroundColor:colors,borderWidth:0,borderRadius:isBar?4:0}]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{position:isBar?'none':'right',labels:{font:{family:'Inter',size:9},padding:7,boxWidth:9}}},
+          scales:isBar?{y:{beginAtZero:true,ticks:{font:{family:'Inter',size:9}}},x:{ticks:{font:{family:'Inter',size:9}}}}:{}}
+      });
+      chartInsts.push(ch);
+    } else {
+      var ul=document.getElementById('tl_'+q.id);if(!ul)return;
+      var texts=[];
+      resps.forEach(function(r){
+        var v=r.answers&&r.answers[q.id];
+        if(!v||!String(v).trim())return;
+        if(qT(q)==='file'){
+          var fname=(r.answers&&r.answers[q.id+'_fname'])||'ファイル';
+          texts.push((isImageUrl(v)?'🖼️ ':'📎 ')+'<a href="'+e(v)+'" target="_blank" style="color:var(--p);font-weight:600;">'+e(fname)+'</a>');
+        } else {
+          texts.push(e(String(v)));
+        }
+      });
+      ul.innerHTML=texts.length?texts.slice(0,20).map(function(t){return '<li>'+t+'</li>';}).join(''):'<li style="color:var(--muted)">回答なし</li>';
+    }
+  });
+}
+
+// ===== クロス集計 =====
+function renderCrossTab(){
+  var q1id=document.getElementById('xtabQ1').value;
+  var q2id=document.getElementById('xtabQ2').value;
+  var resEl=document.getElementById('xtabResult');
+  if(!q1id||!q2id||q1id===q2id){resEl.innerHTML='<p style="font-size:.76rem;color:var(--muted);">異なる2つの質問を選んでください</p>';return;}
+  var qs=getAllQ(curForm);
+  var q1=qs.find(function(x){return x.id===q1id;}), q2=qs.find(function(x){return x.id===q2id;});
+  if(!q1||!q2)return;
+  var vals1={}, vals2={}, matrix={};
+  resps.forEach(function(r){
+    var a1=r.answers&&r.answers[q1id], a2=r.answers&&r.answers[q2id];
+    var list1=Array.isArray(a1)?a1:(a1!=null&&a1!==''?[a1]:[]);
+    var list2=Array.isArray(a2)?a2:(a2!=null&&a2!==''?[a2]:[]);
+    if(!list1.length||!list2.length)return;
+    list1.forEach(function(v1){
+      vals1[v1]=true;
+      list2.forEach(function(v2){
+        vals2[v2]=true;
+        var key=v1+'|||'+v2;
+        matrix[key]=(matrix[key]||0)+1;
+      });
+    });
+  });
+  var l1=Object.keys(vals1), l2=Object.keys(vals2);
+  if(!l1.length||!l2.length){resEl.innerHTML='<p style="font-size:.76rem;color:var(--muted);">データがありません</p>';return;}
+  var html='<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;font-size:.73rem;">';
+  html+='<tr><th style="border:1px solid var(--border);padding:6px 9px;background:var(--bg2);text-align:left;">'+e(qL(q1))+' ＼ '+e(qL(q2))+'</th>'
+    +l2.map(function(v2){return '<th style="border:1px solid var(--border);padding:6px 9px;background:var(--bg2);">'+e(v2)+'</th>';}).join('')
+    +'<th style="border:1px solid var(--border);padding:6px 9px;background:var(--bg2);">合計</th></tr>';
+  l1.forEach(function(v1){
+    var rowTotal=0;
+    var cells=l2.map(function(v2){
+      var c=matrix[v1+'|||'+v2]||0;
+      rowTotal+=c;
+      return '<td style="border:1px solid var(--border);padding:6px 9px;text-align:center;">'+(c||'—')+'</td>';
+    }).join('');
+    html+='<tr><td style="border:1px solid var(--border);padding:6px 9px;font-weight:600;">'+e(v1)+'</td>'+cells+'<td style="border:1px solid var(--border);padding:6px 9px;text-align:center;font-weight:700;">'+rowTotal+'</td></tr>';
+  });
+  var colTotals=l2.map(function(v2){return l1.reduce(function(s,v1){return s+(matrix[v1+'|||'+v2]||0);},0);});
+  var grand=colTotals.reduce(function(s,c){return s+c;},0);
+  html+='<tr><td style="border:1px solid var(--border);padding:6px 9px;font-weight:700;background:var(--bg2);">合計</td>'
+    +colTotals.map(function(c){return '<td style="border:1px solid var(--border);padding:6px 9px;text-align:center;font-weight:700;background:var(--bg2);">'+c+'</td>';}).join('')
+    +'<td style="border:1px solid var(--border);padding:6px 9px;text-align:center;font-weight:700;background:var(--bg2);">'+grand+'</td></tr>';
+  html+='</table></div>';
+  resEl.innerHTML=html;
+}
+
+// ===== トレンドグラフ =====
+function renderTrend(){
+  if(trendChartInst){trendChartInst.destroy();trendChartInst=null;}
+  if(!resps.length){document.getElementById('tabTrend').innerHTML='<div class="trend-empty">まだ回答がありません</div>';return;}
+  // 直近30日の日別カウント
+  var days=30, counts={};
+  var now=new Date(); now.setHours(23,59,59,999);
+  for(var i=0;i<days;i++){
+    var d=new Date(now); d.setDate(d.getDate()-i);
+    var key=d.toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'});
+    counts[key]=0;
+  }
+  resps.forEach(function(r){
+    if(!r.submittedAt)return;
+    var d=new Date(r.submittedAt);
+    var diff=Math.floor((now-d)/(1000*60*60*24));
+    if(diff>=0&&diff<days){
+      var key=d.toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'});
+      counts[key]=(counts[key]||0)+1;
+    }
+  });
+  var labels=Object.keys(counts).reverse();
+  var data=labels.map(function(k){return counts[k]||0;});
+  var ctx=document.getElementById('trendChart');if(!ctx)return;
+  trendChartInst=new Chart(ctx.getContext('2d'),{
+    type:'line',
+    data:{labels:labels,datasets:[{label:'回答数',data:data,borderColor:'#6C63FF',backgroundColor:'rgba(108,99,255,.1)',tension:.4,fill:true,pointRadius:3,pointBackgroundColor:'#6C63FF'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,ticks:{font:{family:'Inter',size:9},stepSize:1}},x:{ticks:{font:{family:'Inter',size:9},maxRotation:45}}}}
+  });
+}
+
+// ===== カレンダー =====
+function calMove(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+function renderCal(){
+  document.getElementById('calMonth').textContent=calYear+'年'+(calMonth+1)+'月';
+  var da=document.getElementById('calDetailArea');if(da)da.innerHTML='';
+  // 日付ごとの回答数
+  var dayCounts={};
+  resps.forEach(function(r){
+    if(!r.submittedAt)return;
+    var d=new Date(r.submittedAt);
+    if(d.getFullYear()===calYear&&d.getMonth()===calMonth){
+      var key=d.getDate();dayCounts[key]=(dayCounts[key]||0)+1;
+    }
+  });
+  var first=new Date(calYear,calMonth,1);
+  var last=new Date(calYear,calMonth+1,0);
+  var startDow=first.getDay(); // 0=日
+  var today=new Date(); today.setHours(0,0,0,0);
+  var html='';
+  ['日','月','火','水','木','金','土'].forEach(function(d){html+='<div class="cal-day-lbl">'+d+'</div>';});
+  // 前月埋め
+  for(var i=0;i<startDow;i++){
+    var pd=new Date(calYear,calMonth,1-startDow+i);
+    html+='<div class="cal-cell other-month"><div class="cal-date">'+pd.getDate()+'</div></div>';
+  }
+  for(var d2=1;d2<=last.getDate();d2++){
+    var isToday=(new Date(calYear,calMonth,d2).getTime()===today.getTime());
+    var cnt=dayCounts[d2]||0;
+    var intensity=cnt>0?Math.min(cnt/5,1):0;
+    var bg=cnt>0?'rgba(108,99,255,'+((intensity*0.35)+0.08)+')':'';
+    html+='<div class="cal-cell'+(isToday?' today':'')+'"'+(cnt>0?' onclick="calDayClick('+calYear+','+calMonth+','+d2+')"':'')+' style="cursor:'+(cnt>0?'pointer':'default')+';'+(bg?'background:'+bg+';border-color:rgba(108,99,255,.3)':'')+'">'
+      +'<div class="cal-date">'+d2+'</div>'
+      +(cnt>0?'<div class="cal-count">'+cnt+'</div>':'')
+    +'</div>';
+  }
+  // 後月埋め
+  var remaining=(7-((startDow+last.getDate())%7))%7;
+  for(var j=1;j<=remaining;j++)html+='<div class="cal-cell other-month"><div class="cal-date">'+j+'</div></div>';
+  document.getElementById('calGrid').innerHTML=html;
+}
+function calDayClick(y,m,d){
+  var dayResps=resps.filter(function(r){
+    if(!r.submittedAt)return false;
+    var dt=new Date(r.submittedAt);
+    return dt.getFullYear()===y&&dt.getMonth()===m&&dt.getDate()===d;
+  });
+  var area=document.getElementById('calDetailArea');
+  if(!area)return;
+  if(!dayResps.length){area.innerHTML='';return;}
+  var qs=getAllQ(curForm).filter(function(q){return qT(q)!=='section';});
+  var firstQ=qs[0];
+  var html='<div style="font-size:.8rem;font-weight:700;color:var(--text);margin:14px 0 8px;">📅 '+(m+1)+'月'+d+'日の回答（'+dayResps.length+'件）</div>';
+  html+='<div class="rlist">'+dayResps.map(function(r){
+    var preview='';
+    if(firstQ){
+      var v=r.answers&&r.answers[firstQ.id];
+      preview=Array.isArray(v)?v.join('、'):(v!=null&&v!==''?String(v):'—');
+    }
+    return '<div class="rcard"><div class="rcard-head" onclick="jumpToResponse(\''+r._id+'\')">'
+      +'<span class="rcard-time">'+(r.submittedAt?new Date(r.submittedAt).toLocaleTimeString('ja-JP'):'—')+'</span>'
+      +'<span style="font-size:.74rem;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+e(preview)+'</span>'
+      +'<span style="font-size:.68rem;color:var(--p);font-weight:600;white-space:nowrap;">回答タブで開く →</span>'
+    +'</div></div>';
+  }).join('')+'</div>';
+  area.innerHTML=html;
+}
+function jumpToResponse(rid){
+  drTab('res',document.querySelector('.dr-tab[data-tab="res"]'));
+  var searchInp=document.querySelector('.res-search');if(searchInp)searchInp.value='';
+  var statusSel=document.getElementById('statusFilterSel');if(statusSel)statusSel.value='';
+  applyRespFilters('','');
+  setTimeout(function(){
+    var idx=filteredResps.findIndex(function(r){return r._id===rid;});
+    if(idx>=0){
+      var el=document.getElementById('rc_'+idx);
+      if(el){el.classList.add('open');el.scrollIntoView({behavior:'smooth',block:'center'});}
+    }
+  },60);
+}
+
+// ===== 設定タブ =====
+function renderSettingsTab(f){
+  var st=f.settings||{};
+  var rows=[
+    {l:'公開日時',v:st.publishAt?new Date(st.publishAt).toLocaleString('ja-JP'):'未設定',on:!!st.publishAt},
+    {l:'締切日時',v:st.deadline?new Date(st.deadline).toLocaleString('ja-JP'):'未設定',on:!!st.deadline},
+    {l:'定員制限',v:st.capacity?st.capacity+'名':'未設定',on:!!st.capacity},
+    {l:'パスワード保護',v:st.password?'設定あり':'なし',on:!!st.password},
+    {l:'1人1回制限',v:st.oneResponse?'有効':'無効',on:!!st.oneResponse},
+    {l:'完了メッセージ',v:st.thankMsg||'ご回答ありがとうございました！',on:true},
+    {l:'リダイレクトURL',v:st.redirectUrl||'なし',on:!!st.redirectUrl},
+  ];
+  document.getElementById('settingsInfo').innerHTML=rows.map(function(r){
+    return '<div class="sinfo-row"><span class="sinfo-lbl">'+e(r.l)+'</span><div style="display:flex;align-items:center;gap:6px;"><span class="sinfo-badge '+(r.on?'sib-on':'sib-off')+'">'+(r.on?'ON':'OFF')+'</span><span class="sinfo-val">'+e(r.v.slice?r.v.slice(0,30):r.v)+'</span></div></div>';
+  }).join('');
+  // タグ編集
+  renderTagEdit(f);
+  // 共同編集者
+  renderEditorsMgmt(f);
+}
+function renderEditorsMgmt(f){
+  var box=document.getElementById('drEditorsList');
+  if(!box||!f)return;
+  var editors=f.editors||[];
+  var canManage=f.isOwner!==false;
+  box.innerHTML=editors.length?editors.map(function(em){
+    return '<div class="tag-edit-item">'+e(em)+(canManage?'<button class="tag-del" onclick="removeEditorDash(\''+em.replace(/'/g,"\\'")+'\')">✕</button>':'')+'</div>';
+  }).join(''):'<div style="font-size:.73rem;color:var(--muted);">まだ共同編集者はいません</div>';
+  var addRow=document.getElementById('drEditorsAddRow');
+  if(addRow)addRow.style.display=canManage?'flex':'none';
+}
+async function addEditorDash(){
+  if(!curForm)return;
+  if(curForm.isOwner===false){showToast('オーナーのみ編集者を管理できます');return;}
+  var v=document.getElementById('editorEmailInput').value.trim().toLowerCase();
+  if(!v||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){showToast('正しいメールアドレスを入力してください');return;}
+  if(user&&v===(user.email||'').toLowerCase()){showToast('自分自身は追加できません');return;}
+  var editors=curForm.editors||[];
+  if(editors.includes(v)){showToast('すでに追加されています');return;}
+  editors=editors.concat([v]);
+  try{
+    await db.collection('forms').doc(curForm.id).update({editors:editors});
+    curForm.editors=editors;
+    document.getElementById('editorEmailInput').value='';
+    renderEditorsMgmt(curForm);
+    showToast('✅ 編集者を追加しました');
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+async function removeEditorDash(email){
+  if(!curForm||curForm.isOwner===false)return;
+  var editors=(curForm.editors||[]).filter(function(x){return x!==email;});
+  try{
+    await db.collection('forms').doc(curForm.id).update({editors:editors});
+    curForm.editors=editors;
+    renderEditorsMgmt(curForm);
+    showToast('編集者を削除しました');
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+function renderTagEdit(f){
+  var tags=f.tags||[];
+  document.getElementById('tagEditList').innerHTML=tags.map(function(t,i){
+    return '<div class="tag-edit-item">'+e(t)+'<button class="tag-del" onclick="removeTag('+i+')">✕</button></div>';
+  }).join('');
+}
+async function addTag(){
+  var v=document.getElementById('tagInput').value.trim();
+  if(!v||!curForm)return;
+  var tags=curForm.tags||[];
+  if(tags.includes(v)){showToast('タグはすでに存在します');return;}
+  tags=tags.concat([v]);
+  await db.collection('forms').doc(curForm.id).update({tags:tags});
+  curForm.tags=tags;document.getElementById('tagInput').value='';
+  renderTagEdit(curForm);showToast('✅ タグを追加しました');
+}
+async function removeTag(i){
+  if(!curForm)return;
+  var tags=(curForm.tags||[]).filter(function(_,idx){return idx!==i;});
+  await db.collection('forms').doc(curForm.id).update({tags:tags});
+  curForm.tags=tags; renderTagEdit(curForm);showToast('タグを削除しました');
+}
+async function saveNotifyEmail(){
+  var v=document.getElementById('notifyEmail').value.trim();
+  if(!curForm)return;
+  await db.collection('forms').doc(curForm.id).update({notifyEmail:v||null});
+  curForm.notifyEmail=v;
+  document.getElementById('notifyEmailDisplay').textContent=v?'現在の通知先: '+v:'';
+  showToast('✅ 通知メールを保存しました');
+}
+async function saveWebhookUrl(){
+  var v=document.getElementById('webhookUrl').value.trim();
+  if(!curForm)return;
+  await db.collection('forms').doc(curForm.id).update({webhookUrl:v||null});
+  curForm.webhookUrl=v;
+  document.getElementById('webhookUrlDisplay').textContent=v?'現在のWebhook: '+v:'';
+  showToast('✅ Webhook URLを保存しました');
+}
+async function toggleSpamProtect(){
+  if(!curForm)return;
+  var next=!curForm.spamProtect;
+  document.getElementById('spamToggle').classList.toggle('on',next);
+  curForm.spamProtect=next;
+  try{await db.collection('forms').doc(curForm.id).update({spamProtect:next});showToast(next?'🛡️ 有効にしました':'スパム対策を無効にしました');}
+  catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+
+// ===== フォーム複製 =====
+async function duplicateForm(){
+  if(!curForm||!user)return;
+  showToast('📋 複製中...');
+  var data=JSON.parse(JSON.stringify(curForm));
+  delete data.id; delete data._id; delete data.isOwner;
+  data.title=(data.title||'無題')+'（コピー）';
+  data.responseCount=0;
+  data.archived=false;
+  data.editors=[];
+  data.createdAt=new Date().toISOString();
+  data.updatedAt=new Date().toISOString();
+  data.userId=user.uid;
+  data.ownerEmail=user.email||null;
+  try{
+    var ref=await db.collection('forms').add(data);
+    showToast('✅ 複製しました！');
+    setTimeout(function(){location.href='builder.html?id='+ref.id;},1200);
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+
+// ===== 共有 =====
+function cpUrl(){navigator.clipboard.writeText(document.getElementById('drUrl').textContent);showToast('✅ URLをコピーしました');}
+function cpEmbed(){navigator.clipboard.writeText(document.getElementById('embedCode').textContent);showToast('✅ 埋め込みコードをコピーしました');}
+function dlQr(){var img=document.querySelector('#qrDivD img');if(!img){showToast('QR生成中...');return;}var a=document.createElement('a');a.download='formly-qr.png';a.href=img.src;a.click();}
+
+// ===== CSV出力 =====
+function exportCSV(){
+  if(!curForm)return;
+  var qs=getAllQ(curForm).filter(function(q){return qT(q)!=='section';});
+  var src=filteredResps.length&&filteredResps.length!==resps.length?filteredResps:resps;
+  var headers=['#','送信日時','ステータス'].concat(qs.map(function(q){return qL(q);}));
+  var stLabels={new:'未対応',done:'対応済み',flag:'要確認'};
+  var rows=src.map(function(r,i){
+    return [i+1,r.submittedAt?new Date(r.submittedAt).toLocaleString('ja-JP'):'',stLabels[r.status||'new']].concat(qs.map(function(q){
+      // 2カラム対応
+      if(r.answers&&r.answers[q.id+'_L']!==undefined)return (r.answers[q.id+'_L']||'')+' '+(r.answers[q.id+'_R']||'');
+      var v=r.answers&&r.answers[q.id];return Array.isArray(v)?v.join('|'):(v!=null?String(v):'');
+    }));
+  });
+  var csv=[headers].concat(rows).map(function(r){return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));a.download=(curForm.title||'responses')+'.csv';a.click();
+}
+function exportAll(){
+  if(!forms.length){showToast('フォームがありません');return;}
+  var csv=[['ID','タイトル','回答数','ステータス','タグ','作成日']].concat(forms.map(function(f){
+    return [f.id,f.title||'',f.responseCount||0,formStatus(f),(f.tags||[]).join('|'),f.createdAt||''];
+  })).map(function(r){return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));a.download='formly_forms.csv';a.click();
+}
+
+// ===== 印刷 =====
+function printResponses(style){
+  if(!curForm)return;
+  closePrintModal();
+  var qs=getAllQ(curForm).filter(function(q){return qT(q)!=='section';});
+  var src=filteredResps.length?filteredResps:resps;
+  var html;
+  if(style==='table')html=buildPrintTable(qs,src);
+  else if(style==='summary')html=buildPrintSummary(qs,src);
+  else html=buildPrintCards(qs,src);
+  var pa=document.getElementById('printArea');
+  pa.innerHTML=html;
+  pa.style.display='block';
+  setTimeout(function(){
+    window.print();
+  },50);
+}
+function openPrintModal(){if(!curForm)return;document.getElementById('printModal').classList.add('open');}
+function closePrintModal(){document.getElementById('printModal').classList.remove('open');}
+function printHeader(extraTitle){
+  return '<h1 style="font-family:sans-serif;">'+e(curForm.title||'無題のフォーム')+(extraTitle?' — '+extraTitle:'')+'</h1>'
+    +'<p style="font-family:sans-serif;color:#666;">出力日: '+new Date().toLocaleString('ja-JP')+'</p>';
+}
+// カード形式（1件ずつ詳細表示、画像はサムネイル表示）
+function buildPrintCards(qs,src){
+  var html=printHeader('回答一覧（カード形式・'+src.length+'件）');
+  src.forEach(function(r,i){
+    html+='<div style="border:1px solid #ccc;border-radius:8px;padding:12px;margin:10px 0;font-family:sans-serif;page-break-inside:avoid;">'
+      +'<div style="font-weight:700;margin-bottom:6px;">#'+(i+1)+' — '+(r.submittedAt?new Date(r.submittedAt).toLocaleString('ja-JP'):'—')+'</div>';
+    qs.forEach(function(q){
+      var v=r.answers&&r.answers[q.id];
+      var disp=v==null?'—':Array.isArray(v)?v.join('、'):String(v)||'—';
+      if(r.answers&&r.answers[q.id+'_L']!==undefined)disp=(r.answers[q.id+'_L']||'')+' '+(r.answers[q.id+'_R']||'');
+      if(qT(q)==='file'&&v){
+        var fname=(r.answers&&r.answers[q.id+'_fname'])||'ファイル';
+        if(isImageUrl(v)){
+          html+='<div style="margin-bottom:6px;"><span style="color:#666;font-size:.8em;">'+e(qL(q))+'</span><br>'
+            +'<img src="'+e(v)+'" style="max-width:180px;max-height:180px;border-radius:6px;border:1px solid #ddd;margin-top:3px;"></div>';
+        } else {
+          html+='<div style="margin-bottom:6px;"><span style="color:#666;font-size:.8em;">'+e(qL(q))+'</span><br>📎 '+e(fname)+'</div>';
+        }
+        return;
+      }
+      html+='<div style="margin-bottom:4px;"><span style="color:#666;font-size:.8em;">'+e(qL(q))+'</span><br>'+e(disp)+'</div>';
+    });
+    html+='</div>';
+  });
+  return html;
+}
+// 表形式（一覧比較用、画像はファイル名のみ）
+function buildPrintTable(qs,src){
+  var html=printHeader('回答一覧（表形式・'+src.length+'件）');
+  html+='<table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:.78rem;">';
+  html+='<tr><th style="border:1px solid #ccc;padding:6px 8px;background:#f2f2f7;text-align:left;">#</th>'
+    +'<th style="border:1px solid #ccc;padding:6px 8px;background:#f2f2f7;text-align:left;">送信日時</th>'
+    +qs.map(function(q){return '<th style="border:1px solid #ccc;padding:6px 8px;background:#f2f2f7;text-align:left;">'+e(qL(q))+'</th>';}).join('')
+  +'</tr>';
+  src.forEach(function(r,i){
+    html+='<tr style="page-break-inside:avoid;">'
+      +'<td style="border:1px solid #ccc;padding:6px 8px;">'+(i+1)+'</td>'
+      +'<td style="border:1px solid #ccc;padding:6px 8px;white-space:nowrap;">'+(r.submittedAt?new Date(r.submittedAt).toLocaleString('ja-JP'):'—')+'</td>'
+      +qs.map(function(q){
+        var v=r.answers&&r.answers[q.id];
+        var disp=v==null?'—':Array.isArray(v)?v.join('、'):String(v)||'—';
+        if(r.answers&&r.answers[q.id+'_L']!==undefined)disp=(r.answers[q.id+'_L']||'')+' '+(r.answers[q.id+'_R']||'');
+        if(qT(q)==='file'&&v){
+          var fname=(r.answers&&r.answers[q.id+'_fname'])||'ファイル';
+          disp=(isImageUrl(v)?'🖼️ ':'📎 ')+fname;
+        }
+        return '<td style="border:1px solid #ccc;padding:6px 8px;">'+e(disp)+'</td>';
+      }).join('')
+    +'</tr>';
+  });
+  html+='</table>';
+  return html;
+}
+// 集計サマリー付き（簡易グラフ＋表）
+function buildPrintSummary(qs,src){
+  var html=printHeader('集計サマリー（'+src.length+'件）');
+  qs.forEach(function(q){
+    var type=qT(q);
+    if(!['radio','select','checkbox','rating'].includes(type))return;
+    var counts={};
+    src.forEach(function(r){
+      var v=r.answers&&r.answers[q.id];
+      if(Array.isArray(v))v.forEach(function(x){counts[x]=(counts[x]||0)+1;});
+      else if(v!=null&&v!=='')counts[String(v)]=(counts[String(v)]||0)+1;
+    });
+    var labels=Object.keys(counts);
+    html+='<div style="margin:14px 0;font-family:sans-serif;page-break-inside:avoid;">'
+      +'<div style="font-weight:700;margin-bottom:6px;">'+e(qL(q))+'</div>';
+    if(!labels.length){
+      html+='<div style="color:#999;font-size:.8em;">データなし</div>';
+    } else {
+      var max=Math.max.apply(null,labels.map(function(l){return counts[l];}));
+      html+=labels.map(function(l){
+        var pct=max?Math.round((counts[l]/max)*100):0;
+        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;font-size:.8em;">'
+          +'<span style="width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+e(l)+'</span>'
+          +'<div style="flex:1;background:#eee;border-radius:3px;height:12px;position:relative;"><div style="width:'+pct+'%;background:#6C63FF;height:100%;border-radius:3px;"></div></div>'
+          +'<span style="width:38px;text-align:right;flex-shrink:0;">'+counts[l]+'件</span>'
+        +'</div>';
+      }).join('');
+    }
+    html+='</div>';
+  });
+  html+='<div style="page-break-before:always;"></div>';
+  html+=buildPrintTable(qs,src);
+  return html;
+}
+window.addEventListener('afterprint',function(){
+  var pa=document.getElementById('printArea');
+  if(pa){pa.style.display='none';pa.innerHTML='';}
+});
+
+// ===== 削除確認 =====
+function confirmDel(id,type,ridx){
+  var title,sub,btn;
+  if(type==='form'){
+    var f=forms.find(function(x){return x.id===id;});
+    if(f&&f.isOwner===false){showToast('オーナーのみ削除できます');return;}
+    title='フォームを削除';sub='「'+(f&&f.title||'このフォーム')+'」を削除します。回答データは残ります。';btn='削除する';
+    document.getElementById('confirmBtn').onclick=function(){execDelForm(id);closeConfirm();};
+  } else {
+    title='この回答を削除';sub='この回答データを完全に削除します。元に戻せません。';btn='削除する';
+    document.getElementById('confirmBtn').onclick=function(){execDelResp(id,ridx);closeConfirm();};
+  }
+  document.getElementById('confirmIcon').textContent='🗑️';
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmSub').textContent=sub;
+  document.getElementById('confirmBtn').textContent=btn;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('open');}
+async function execDelForm(fid){
+  try{
+    await db.collection('forms').doc(fid).delete();
+    showToast('🗑 フォームを削除しました');
+    if(curForm&&curForm.id===fid)closeDrawer();
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+async function execDelResp(rid,ridx){
+  try{
+    await db.collection('responses').doc(rid).delete();
+    // ローカルから削除
+    resps=resps.filter(function(r){return r._id!==rid;});
+    filteredResps=filteredResps.filter(function(r){return r._id!==rid;});
+    // responseCountをデクリメント
+    if(curForm)await db.collection('forms').doc(curForm.id).update({responseCount:firebase.firestore.FieldValue.increment(-1)});
+    document.getElementById('resCountLabel').textContent=resps.length+'件の回答';
+    renderResps();
+    showToast('🗑 回答を削除しました');
+  }catch(ex){showToast('❌ エラー: '+ex.message);}
+}
+
+function doSignOut(){if(rtUnsubscribe)rtUnsubscribe();if(editorRtUnsubscribe)editorRtUnsubscribe();auth.signOut().then(function(){location.href='index.html';});}
+
+var toastT;
+function showToast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show');},2600);
+}
+
+// ===== キーボードショートカット =====
+document.addEventListener('keydown',function(ev){
+  var tag=(document.activeElement&&document.activeElement.tagName)||'';
+  var typing=tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT';
+  if(ev.key==='Escape'){
+    if(document.getElementById('confirmOverlay').classList.contains('open')){closeConfirm();return;}
+    if(document.getElementById('integrationsModal').classList.contains('open')){closeIntegrationsModal();return;}
+    if(document.getElementById('printModal').classList.contains('open')){closePrintModal();return;}
+    if(document.getElementById('drawerOverlay').classList.contains('open')){closeDrawer();return;}
+  }
+  if(ev.key==='/'&&!typing){
+    ev.preventDefault();
+    document.getElementById('searchInput').focus();
+  }
+});
+</script>
+</body>
+</html>
